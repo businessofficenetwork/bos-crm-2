@@ -73,3 +73,42 @@ export async function updateClaim(id, updates) {
   if (error) throw error
   return data
 }
+
+export async function listSupplements(search = '') {
+  let query = supabase
+    .from('supplements')
+    .select(
+      '*, claim:claims!inner(id, property_address, homeowner_name, claim_number, contractor:contractors(name))'
+    )
+    .order('created_at', { ascending: false })
+
+  const term = search.trim()
+  if (term) {
+    query = query.or(
+      `property_address.ilike.%${term}%,homeowner_name.ilike.%${term}%,claim_number.ilike.%${term}%`,
+      { foreignTable: 'claims' }
+    )
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function createSupplement(supplement) {
+  const { data, error } = await supabase.from('supplements').insert(supplement).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateSupplement(id, updates) {
+  const { data, error } = await supabase
+    .from('supplements')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
