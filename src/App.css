@@ -1,0 +1,30 @@
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 180px;
+  padding: 1.5rem 1rem;
+  border-right: 1px solid #ddd;
+}
+
+.nav a {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav a.active {
+  background: #e8e8e8;
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
