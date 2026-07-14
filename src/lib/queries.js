@@ -141,3 +141,27 @@ export async function updateAction(id, updates) {
   if (error) throw error
   return data
 }
+
+export async function getPipelineSummary() {
+  const { data, error } = await supabase
+    .from('supplements')
+    .select('stage, supplement_requested, supplement_approved')
+
+  if (error) throw error
+  return data
+}
+
+export async function listOverdueActions() {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('actions')
+    .select(
+      '*, supplement:supplements(id, stage, claim:claims(property_address, claim_number, contractor:contractors(name)))'
+    )
+    .eq('completed', false)
+    .lt('due_date', today)
+    .order('due_date', { ascending: true })
+
+  if (error) throw error
+  return data
+}
