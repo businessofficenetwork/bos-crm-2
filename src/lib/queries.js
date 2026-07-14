@@ -112,3 +112,32 @@ export async function updateSupplement(id, updates) {
   if (error) throw error
   return data
 }
+
+export async function listActions(supplementId) {
+  const { data, error } = await supabase
+    .from('actions')
+    .select('*')
+    .eq('supplement_id', supplementId)
+    .order('due_date', { ascending: true, nullsFirst: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function createAction(action) {
+  const { data, error } = await supabase.from('actions').insert(action).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateAction(id, updates) {
+  const { data, error } = await supabase
+    .from('actions')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}

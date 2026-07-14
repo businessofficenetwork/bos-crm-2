@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import SupplementForm from '../components/SupplementForm'
+import ActionsPanel from '../components/ActionsPanel'
 import { listSupplements, createSupplement, updateSupplement, listClaims } from '../lib/queries'
 import './Contractors.css'
 
@@ -74,12 +75,15 @@ function Pipeline() {
       />
 
       {editing && (
-        <SupplementForm
-          claims={claims}
-          initialValues={editing}
-          onSubmit={handleSubmit}
-          onCancel={() => setEditing(null)}
-        />
+        <>
+          <SupplementForm
+            claims={claims}
+            initialValues={editing}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditing(null)}
+          />
+          {editing.id && <ActionsPanel supplementId={editing.id} />}
+        </>
       )}
 
       {loading && <p>Loading…</p>}

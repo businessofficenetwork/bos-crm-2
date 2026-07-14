@@ -71,3 +71,42 @@
 .form-error {
   color: #b00020;
 }
+
+.actions-panel {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.actions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.actions-list .completed label {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.actions-empty {
+  color: #888;
+}
+
+.due-date {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.actions-add {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions-add input[type='text'] {
+  flex: 1;
+}
