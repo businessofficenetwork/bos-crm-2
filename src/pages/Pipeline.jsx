@@ -2,11 +2,35 @@ import { useEffect, useState } from 'react'
 import SupplementForm from '../components/SupplementForm'
 import ActionsPanel from '../components/ActionsPanel'
 import { listSupplements, createSupplement, updateSupplement, listClaims } from '../lib/queries'
+import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
 
 function money(value) {
   return value === null || value === undefined ? '' : `$${Number(value).toFixed(2)}`
 }
+
+const CSV_COLUMNS = [
+  { key: 'claim_address', label: 'Claim', get: (row) => row.claim?.property_address },
+  { key: 'claim_number', label: 'Claim #', get: (row) => row.claim?.claim_number },
+  { key: 'contractor', label: 'Contractor', get: (row) => row.claim?.contractor?.name },
+  { key: 'stage', label: 'Stage' },
+  { key: 'original_estimate_rcv', label: 'Original Estimate RCV' },
+  { key: 'supplement_requested', label: 'Supplement Requested' },
+  { key: 'supplement_approved', label: 'Supplement Approved' },
+  { key: 'bon_fee', label: 'BON Fee' },
+  { key: 'intake_date', label: 'Intake Date' },
+  { key: 'docs_received_date', label: 'Docs Received Date' },
+  { key: 'reviewed_date', label: 'Reviewed Date' },
+  { key: 'supplement_written_date', label: 'Supplement Written Date' },
+  { key: 'submitted_date', label: 'Submitted Date' },
+  { key: 'carrier_response_date', label: 'Carrier Response Date' },
+  { key: 'approved_date', label: 'Approved Date' },
+  { key: 'paid_date', label: 'Paid Date' },
+  { key: 'invoiced_date', label: 'Invoiced Date' },
+  { key: 'closed_date', label: 'Closed Date' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'created_at', label: 'Created At' },
+]
 
 function Pipeline() {
   const [supplements, setSupplements] = useState([])
@@ -50,18 +74,27 @@ function Pipeline() {
     await refresh()
   }
 
+  function handleExport() {
+    downloadCsv('pipeline.csv', toCsv(supplements, CSV_COLUMNS))
+  }
+
   return (
     <div>
       <div className="contractors-header">
         <h1>Pipeline</h1>
-        <button
-          type="button"
-          onClick={() => setEditing({})}
-          disabled={claims.length === 0}
-          title={claims.length === 0 ? 'Add a job first' : undefined}
-        >
-          Add Supplement
-        </button>
+        <div className="header-actions">
+          <button type="button" onClick={handleExport} disabled={supplements.length === 0}>
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing({})}
+            disabled={claims.length === 0}
+            title={claims.length === 0 ? 'Add a job first' : undefined}
+          >
+            Add Supplement
+          </button>
+        </div>
       </div>
 
       {claims.length === 0 && !loading && <p>Add a job before creating a supplement.</p>}

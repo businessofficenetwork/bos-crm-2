@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react'
 import ClaimForm from '../components/ClaimForm'
 import { listClaims, createClaim, updateClaim, listContractors } from '../lib/queries'
+import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
+
+const CSV_COLUMNS = [
+  { key: 'contractor', label: 'Contractor', get: (row) => row.contractor?.name },
+  { key: 'property_address', label: 'Property Address' },
+  { key: 'homeowner_name', label: 'Homeowner Name' },
+  { key: 'carrier', label: 'Carrier' },
+  { key: 'claim_number', label: 'Claim #' },
+  { key: 'adjuster_name', label: 'Adjuster Name' },
+  { key: 'adjuster_contact', label: 'Adjuster Contact' },
+  { key: 'date_of_loss', label: 'Date of Loss' },
+  { key: 'created_at', label: 'Created At' },
+]
 
 function Jobs() {
   const [claims, setClaims] = useState([])
@@ -45,18 +58,27 @@ function Jobs() {
     await refresh()
   }
 
+  function handleExport() {
+    downloadCsv('jobs.csv', toCsv(claims, CSV_COLUMNS))
+  }
+
   return (
     <div>
       <div className="contractors-header">
         <h1>Jobs</h1>
-        <button
-          type="button"
-          onClick={() => setEditing({})}
-          disabled={contractors.length === 0}
-          title={contractors.length === 0 ? 'Add a contractor first' : undefined}
-        >
-          Add Job
-        </button>
+        <div className="header-actions">
+          <button type="button" onClick={handleExport} disabled={claims.length === 0}>
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing({})}
+            disabled={contractors.length === 0}
+            title={contractors.length === 0 ? 'Add a contractor first' : undefined}
+          >
+            Add Job
+          </button>
+        </div>
       </div>
 
       {contractors.length === 0 && !loading && (
