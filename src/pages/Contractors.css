@@ -107,6 +107,21 @@
   font-size: 0.9em;
 }
 
+.actions-list .overdue .due-date {
+  color: #b00020;
+  font-weight: 600;
+}
+
+.actions-list .due-soon .due-date {
+  color: #b8860b;
+  font-weight: 600;
+}
+
+.overdue-cell {
+  color: #b00020;
+  font-weight: 600;
+}
+
 .actions-add {
   display: flex;
   gap: 0.5rem;

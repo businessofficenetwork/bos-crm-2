@@ -165,3 +165,15 @@ export async function listOverdueActions() {
   if (error) throw error
   return data
 }
+
+export async function countOverdueActions() {
+  const today = new Date().toISOString().slice(0, 10)
+  const { count, error } = await supabase
+    .from('actions')
+    .select('id', { count: 'exact', head: true })
+    .eq('completed', false)
+    .lt('due_date', today)
+
+  if (error) throw error
+  return count ?? 0
+}

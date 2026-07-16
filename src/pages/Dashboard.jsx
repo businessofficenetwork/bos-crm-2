@@ -101,7 +101,7 @@ function Dashboard() {
               {overdue.map((a) => (
                 <tr key={a.id}>
                   <td>{a.description}</td>
-                  <td>{a.due_date}</td>
+                  <td className="overdue-cell">{a.due_date}</td>
                   <td>{a.supplement?.stage}</td>
                   <td>{a.supplement?.claim?.property_address || a.supplement?.claim?.claim_number}</td>
                   <td>{a.supplement?.claim?.contractor?.name}</td>

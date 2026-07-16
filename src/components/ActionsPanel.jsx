@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listActions, createAction, updateAction } from '../lib/queries'
+import { dueStatus } from '../lib/dueStatus'
 
 function ActionsPanel({ supplementId }) {
   const [actions, setActions] = useState([])
@@ -67,7 +68,7 @@ function ActionsPanel({ supplementId }) {
       {!loading && (
         <ul className="actions-list">
           {actions.map((a) => (
-            <li key={a.id} className={a.completed ? 'completed' : ''}>
+            <li key={a.id} className={[a.completed ? 'completed' : '', dueStatus(a)].filter(Boolean).join(' ')}>
               <label>
                 <input
                   type="checkbox"
