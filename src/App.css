@@ -1,26 +1,32 @@
 .app {
   display: flex;
   min-height: 100vh;
+  background: var(--dark);
 }
 
 .nav {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: 180px;
+  width: 220px;
   padding: 1.5rem 1rem;
-  border-right: 1px solid #ddd;
+  background: var(--dark2);
+  border-right: 1px solid var(--dark4);
 }
 
 .nav a {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   text-decoration: none;
-  color: inherit;
+  color: var(--light-dim);
+  font-family: var(--heading);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
 }
 
 .nav a.active {
-  background: #e8e8e8;
+  background: var(--gold-dim);
+  color: var(--gold);
   font-weight: 600;
 }
 
@@ -29,8 +35,8 @@
   margin-left: 0.4rem;
   padding: 0.05rem 0.45rem;
   border-radius: 999px;
-  background: #b00020;
-  color: #fff;
+  background: var(--red);
+  color: var(--light);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -38,4 +44,5 @@
 .content {
   flex: 1;
   padding: 2rem;
+  color: var(--light);
 }

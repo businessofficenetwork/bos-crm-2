@@ -26,7 +26,14 @@
 .contractors-table td {
   text-align: left;
   padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--dark4);
+}
+
+.contractors-table th {
+  color: var(--light-dim);
+  font-family: var(--heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .contractor-form,
@@ -37,7 +44,8 @@
   gap: 0.75rem;
   padding: 1rem;
   margin-bottom: 1.5rem;
-  border: 1px solid #ddd;
+  background: var(--dark2);
+  border: 1px solid var(--dark4);
   border-radius: 8px;
 }
 
@@ -60,10 +68,11 @@
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
+  color: var(--light-dim);
 }
 
 .stage-dates {
-  border: 1px solid #ddd;
+  border: 1px solid var(--dark4);
   border-radius: 8px;
   padding: 0.75rem;
 }
@@ -74,13 +83,14 @@
 }
 
 .form-error {
-  color: #b00020;
+  color: var(--red);
 }
 
 .actions-panel {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  border: 1px solid #ddd;
+  background: var(--dark2);
+  border: 1px solid var(--dark4);
   border-radius: 8px;
 }
 
@@ -95,30 +105,30 @@
 
 .actions-list .completed label {
   text-decoration: line-through;
-  color: #888;
+  color: var(--light-dim);
 }
 
 .actions-empty {
-  color: #888;
+  color: var(--light-dim);
 }
 
 .due-date {
-  color: #666;
+  color: var(--light-dim);
   font-size: 0.9em;
 }
 
 .actions-list .overdue .due-date {
-  color: #b00020;
+  color: var(--red);
   font-weight: 600;
 }
 
 .actions-list .due-soon .due-date {
-  color: #b8860b;
+  color: var(--gold);
   font-weight: 600;
 }
 
 .overdue-cell {
-  color: #b00020;
+  color: var(--red);
   font-weight: 600;
 }
 
