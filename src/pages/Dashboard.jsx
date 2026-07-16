@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getPipelineSummary, listOverdueActions } from '../lib/queries'
+import RemindersPanel from '../components/RemindersPanel'
 import './Contractors.css'
 
 const STAGES = [
@@ -64,6 +65,8 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
+          <RemindersPanel />
+
           <h2>Pipeline</h2>
           <table className="contractors-table">
             <thead>

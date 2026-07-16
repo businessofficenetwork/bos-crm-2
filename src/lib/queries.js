@@ -177,3 +177,44 @@ export async function countOverdueActions() {
   if (error) throw error
   return count ?? 0
 }
+
+export async function listReminders() {
+  const { data, error } = await supabase
+    .from('reminders')
+    .select('*')
+    .order('completed', { ascending: true })
+    .order('due_date', { ascending: true, nullsFirst: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function createReminder(reminder) {
+  const { data, error } = await supabase.from('reminders').insert(reminder).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateReminder(id, updates) {
+  const { data, error } = await supabase
+    .from('reminders')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function countOverdueReminders() {
+  const today = new Date().toISOString().slice(0, 10)
+  const { count, error } = await supabase
+    .from('reminders')
+    .select('id', { count: 'exact', head: true })
+    .eq('completed', false)
+    .lt('due_date', today)
+
+  if (error) throw error
+  return count ?? 0
+}

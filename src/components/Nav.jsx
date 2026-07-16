@@ -1,14 +1,14 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { countOverdueActions } from '../lib/queries'
+import { countOverdueActions, countOverdueReminders } from '../lib/queries'
 
 function Nav() {
   const location = useLocation()
   const [overdueCount, setOverdueCount] = useState(0)
 
   useEffect(() => {
-    countOverdueActions()
-      .then(setOverdueCount)
+    Promise.all([countOverdueActions(), countOverdueReminders()])
+      .then(([actions, reminders]) => setOverdueCount(actions + reminders))
       .catch(() => {})
   }, [location.pathname])
 
