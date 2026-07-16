@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import ClaimForm from '../components/ClaimForm'
-import { listClaims, createClaim, updateClaim, listContractors } from '../lib/queries'
+import {
+  listClaims,
+  createClaim,
+  createClaimWithIntake,
+  updateClaim,
+  listContractors,
+} from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
 
@@ -52,6 +58,8 @@ function Jobs() {
   async function handleSubmit(form) {
     if (editing.id) {
       await updateClaim(editing.id, form)
+    } else if (editing.__intake) {
+      await createClaimWithIntake(form)
     } else {
       await createClaim(form)
     }
@@ -70,6 +78,14 @@ function Jobs() {
         <div className="header-actions">
           <button type="button" onClick={handleExport} disabled={claims.length === 0}>
             Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing({ __intake: true })}
+            disabled={contractors.length === 0}
+            title={contractors.length === 0 ? 'Add a contractor first' : undefined}
+          >
+            New Intake
           </button>
           <button
             type="button"
@@ -95,12 +111,18 @@ function Jobs() {
       />
 
       {editing && (
-        <ClaimForm
-          contractors={contractors}
-          initialValues={editing}
-          onSubmit={handleSubmit}
-          onCancel={() => setEditing(null)}
-        />
+        <>
+          <h3>{editing.id ? 'Edit Job' : editing.__intake ? 'New Intake' : 'Add Job'}</h3>
+          {editing.__intake && (
+            <p>This creates the job and starts it in the Pipeline at the Intake stage.</p>
+          )}
+          <ClaimForm
+            contractors={contractors}
+            initialValues={editing}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditing(null)}
+          />
+        </>
       )}
 
       {loading && <p>Loading…</p>}

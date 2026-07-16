@@ -62,6 +62,13 @@ export async function createClaim(claim) {
   return data
 }
 
+export async function createClaimWithIntake(claim) {
+  const newClaim = await createClaim(claim)
+  const today = new Date().toISOString().slice(0, 10)
+  await createSupplement({ claim_id: newClaim.id, stage: 'Intake', intake_date: today })
+  return newClaim
+}
+
 export async function updateClaim(id, updates) {
   const { data, error } = await supabase
     .from('claims')
