@@ -13,6 +13,7 @@ const CSV_COLUMNS = [
   { key: 'adjuster_name', label: 'Adjuster Name' },
   { key: 'adjuster_contact', label: 'Adjuster Contact' },
   { key: 'date_of_loss', label: 'Date of Loss' },
+  { key: 'notes', label: 'Notes' },
   { key: 'created_at', label: 'Created At' },
 ]
 

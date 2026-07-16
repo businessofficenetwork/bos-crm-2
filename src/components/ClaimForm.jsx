@@ -9,6 +9,7 @@ const emptyForm = {
   adjuster_name: '',
   adjuster_contact: '',
   date_of_loss: '',
+  notes: '',
 }
 
 function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
@@ -31,7 +32,7 @@ function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
     setError(null)
     setSaving(true)
     try {
-      await onSubmit(form)
+      await onSubmit({ ...form, date_of_loss: form.date_of_loss || null })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -96,6 +97,11 @@ function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
           <input name="adjuster_contact" value={form.adjuster_contact ?? ''} onChange={handleChange} />
         </label>
       </div>
+
+      <label className="form-notes">
+        Notes
+        <textarea name="notes" value={form.notes ?? ''} onChange={handleChange} rows={3} />
+      </label>
 
       {error && <p className="form-error">{error}</p>}
 
