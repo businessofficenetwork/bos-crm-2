@@ -21,6 +21,7 @@ function Nav() {
       <NavLink to="/contractors">Contractors</NavLink>
       <NavLink to="/jobs">Jobs</NavLink>
       <NavLink to="/pipeline">Pipeline</NavLink>
+      <NavLink to="/leads">Leads</NavLink>
     </nav>
   )
 }

@@ -225,3 +225,34 @@ export async function countOverdueReminders() {
   if (error) throw error
   return count ?? 0
 }
+
+export async function listLeads(search = '') {
+  let query = supabase.from('leads').select('*').order('created_at', { ascending: false })
+
+  const term = search.trim()
+  if (term) {
+    query = query.or(`name.ilike.%${term}%,company.ilike.%${term}%,email.ilike.%${term}%`)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function createLead(lead) {
+  const { data, error } = await supabase.from('leads').insert(lead).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateLead(id, updates) {
+  const { data, error } = await supabase
+    .from('leads')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
