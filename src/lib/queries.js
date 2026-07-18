@@ -256,3 +256,37 @@ export async function updateLead(id, updates) {
   if (error) throw error
   return data
 }
+
+export async function listJobComments(claimId) {
+  const { data, error } = await supabase
+    .from('job_comments')
+    .select('*')
+    .eq('claim_id', claimId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createJobComment(comment) {
+  const { data, error } = await supabase.from('job_comments').insert(comment).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function listMentions() {
+  const { data, error } = await supabase
+    .from('job_comments')
+    .select('*, claim:claims(id, property_address, claim_number)')
+    .ilike('body', '%@%')
+    .eq('read', false)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function markCommentRead(id) {
+  const { error } = await supabase.from('job_comments').update({ read: true }).eq('id', id)
+  if (error) throw error
+}

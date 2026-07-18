@@ -194,3 +194,50 @@
 .actions-add input[type='text'] {
   flex: 1;
 }
+
+.comments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.comments-list li {
+  background: var(--dark3);
+  border: 1px solid var(--dark4);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+}
+
+.comments-list li.mention {
+  border-color: var(--gold);
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.comment-author {
+  font-weight: 600;
+}
+
+.comment-time {
+  color: var(--light-dim);
+  font-size: 0.8rem;
+}
+
+.comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.comments-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

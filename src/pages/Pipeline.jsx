@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import SupplementForm from '../components/SupplementForm'
 import ActionsPanel from '../components/ActionsPanel'
 import DetailView from '../components/DetailView'
@@ -66,6 +67,17 @@ function Pipeline() {
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || supplements.length === 0) return
+    const match = supplements.find((s) => s.id === openId)
+    if (match) {
+      setEditing(match)
+    }
+    setSearchParams({}, { replace: true })
+  }, [supplements, searchParams, setSearchParams])
 
   async function refresh(term = search) {
     setLoading(true)

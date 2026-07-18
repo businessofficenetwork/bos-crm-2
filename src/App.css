@@ -1,7 +1,116 @@
-.app {
+.app-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--dark);
+}
+
+.app {
+  display: flex;
+  flex: 1;
+}
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--dark2);
+  border-bottom: 1px solid var(--dark4);
+}
+
+.notif {
+  position: relative;
+}
+
+.notif-icon {
+  position: relative;
+  background: var(--dark3);
+  border: 1px solid var(--dark4);
+  border-radius: 6px;
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--light);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  background: var(--red);
+  color: var(--light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+}
+
+.notif-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--dark2);
+  border: 1px solid var(--dark4);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 0.75rem;
+  z-index: 20;
+}
+
+.notif-title {
+  font-family: var(--heading);
+  font-weight: 600;
+  color: var(--light-dim);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.5rem;
+}
+
+.notif-empty {
+  color: var(--light-dim);
+  margin: 0;
+}
+
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.notif-list button {
+  width: 100%;
+  text-align: left;
+  background: var(--dark3);
+  border: 1px solid var(--dark4);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.notif-list button:hover {
+  background: var(--dark4);
+}
+
+.notif-sub {
+  color: var(--light-dim);
+  font-size: 0.8rem;
 }
 
 .nav {

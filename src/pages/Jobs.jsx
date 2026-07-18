@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ClaimForm from '../components/ClaimForm'
 import DetailView from '../components/DetailView'
+import JobComments from '../components/JobComments'
 import {
   listClaims,
   createClaim,
@@ -47,6 +49,17 @@ function Jobs() {
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || claims.length === 0) return
+    const match = claims.find((c) => c.id === openId)
+    if (match) {
+      setEditing(match)
+    }
+    setSearchParams({}, { replace: true })
+  }, [claims, searchParams, setSearchParams])
 
   async function refresh(term = search) {
     setLoading(true)
@@ -152,6 +165,7 @@ function Jobs() {
             onSubmit={handleSubmit}
             onCancel={() => setEditing(null)}
           />
+          {editing.id && <JobComments claimId={editing.id} />}
         </>
       )}
 
