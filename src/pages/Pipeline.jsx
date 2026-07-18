@@ -1,12 +1,38 @@
 import { useEffect, useState } from 'react'
 import SupplementForm from '../components/SupplementForm'
 import ActionsPanel from '../components/ActionsPanel'
+import DetailView from '../components/DetailView'
 import { listSupplements, createSupplement, updateSupplement, listClaims } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
 
 function money(value) {
   return value === null || value === undefined ? '' : `$${Number(value).toFixed(2)}`
+}
+
+function supplementFields(s) {
+  return [
+    { label: 'Claim', value: s.claim?.property_address },
+    { label: 'Claim #', value: s.claim?.claim_number },
+    { label: 'Contractor', value: s.claim?.contractor?.name },
+    { label: 'Stage', value: s.stage },
+    { label: 'Original Estimate RCV', value: money(s.original_estimate_rcv) },
+    { label: 'Supplement Requested', value: money(s.supplement_requested) },
+    { label: 'Supplement Approved', value: money(s.supplement_approved) },
+    { label: 'BON Fee', value: money(s.bon_fee) },
+    { label: 'Intake Date', value: s.intake_date },
+    { label: 'Docs Received Date', value: s.docs_received_date },
+    { label: 'Reviewed Date', value: s.reviewed_date },
+    { label: 'Supplement Written Date', value: s.supplement_written_date },
+    { label: 'Submitted Date', value: s.submitted_date },
+    { label: 'Carrier Response Date', value: s.carrier_response_date },
+    { label: 'Approved Date', value: s.approved_date },
+    { label: 'Paid Date', value: s.paid_date },
+    { label: 'Invoiced Date', value: s.invoiced_date },
+    { label: 'Closed Date', value: s.closed_date },
+    { label: 'Notes', value: s.notes },
+    { label: 'Created At', value: s.created_at },
+  ]
 }
 
 const CSV_COLUMNS = [
@@ -39,6 +65,7 @@ function Pipeline() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
+  const [viewing, setViewing] = useState(null) // null = closed, object = viewing
 
   async function refresh(term = search) {
     setLoading(true)
@@ -71,6 +98,7 @@ function Pipeline() {
       await createSupplement(form)
     }
     setEditing(null)
+    setViewing(null)
     await refresh()
   }
 
@@ -107,6 +135,18 @@ function Pipeline() {
         onChange={handleSearchChange}
       />
 
+      {viewing && !editing && (
+        <DetailView
+          title={viewing.claim?.property_address || viewing.claim?.claim_number || 'Supplement'}
+          fields={supplementFields(viewing)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+          onClose={() => setViewing(null)}
+        />
+      )}
+
       {editing && (
         <>
           <SupplementForm
@@ -133,29 +173,27 @@ function Pipeline() {
               <th>Supp. Requested</th>
               <th>Supp. Approved</th>
               <th>BON Fee</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {supplements.map((s) => (
               <tr key={s.id}>
-                <td>{s.claim?.property_address || s.claim?.claim_number}</td>
+                <td>
+                  <button type="button" className="row-link" onClick={() => setViewing(s)}>
+                    {s.claim?.property_address || s.claim?.claim_number || 'View'}
+                  </button>
+                </td>
                 <td>{s.claim?.contractor?.name}</td>
                 <td>{s.stage}</td>
                 <td>{money(s.original_estimate_rcv)}</td>
                 <td>{money(s.supplement_requested)}</td>
                 <td>{money(s.supplement_approved)}</td>
                 <td>{money(s.bon_fee)}</td>
-                <td>
-                  <button type="button" onClick={() => setEditing(s)}>
-                    Edit
-                  </button>
-                </td>
               </tr>
             ))}
             {supplements.length === 0 && (
               <tr>
-                <td colSpan={8}>No supplements found.</td>
+                <td colSpan={7}>No supplements found.</td>
               </tr>
             )}
           </tbody>

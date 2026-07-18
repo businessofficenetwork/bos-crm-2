@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import LeadForm from '../components/LeadForm'
+import DetailView from '../components/DetailView'
 import { listLeads, createLead, updateLead } from '../lib/queries'
 import './Contractors.css'
 
@@ -8,12 +9,30 @@ function truncate(text, max = 60) {
   return text.length > max ? text.slice(0, max) + '…' : text
 }
 
+function leadFields(l) {
+  return [
+    { label: 'Name', value: l.name },
+    { label: 'Company', value: l.company },
+    { label: 'Phone', value: l.phone },
+    { label: 'Email', value: l.email },
+    { label: 'Message', value: l.message },
+    { label: 'Source', value: l.source },
+    { label: 'Status', value: l.status },
+    { label: 'UTM Source', value: l.utm_source },
+    { label: 'UTM Medium', value: l.utm_medium },
+    { label: 'UTM Campaign', value: l.utm_campaign },
+    { label: 'UTM Content', value: l.utm_content },
+    { label: 'Created At', value: l.created_at },
+  ]
+}
+
 function Leads() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
+  const [viewing, setViewing] = useState(null) // null = closed, object = viewing
 
   async function refresh(term = search) {
     setLoading(true)
@@ -45,6 +64,7 @@ function Leads() {
       await createLead(form)
     }
     setEditing(null)
+    setViewing(null)
     await refresh()
   }
 
@@ -66,6 +86,18 @@ function Leads() {
         value={search}
         onChange={handleSearchChange}
       />
+
+      {viewing && !editing && (
+        <DetailView
+          title={viewing.name}
+          fields={leadFields(viewing)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+          onClose={() => setViewing(null)}
+        />
+      )}
 
       {editing && (
         <LeadForm
@@ -89,29 +121,27 @@ function Leads() {
               <th>Message</th>
               <th>Source</th>
               <th>Status</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {leads.map((l) => (
               <tr key={l.id}>
-                <td>{l.name}</td>
+                <td>
+                  <button type="button" className="row-link" onClick={() => setViewing(l)}>
+                    {l.name}
+                  </button>
+                </td>
                 <td>{l.company}</td>
                 <td>{l.phone}</td>
                 <td>{l.email}</td>
                 <td>{truncate(l.message)}</td>
                 <td>{l.source}</td>
                 <td>{l.status}</td>
-                <td>
-                  <button type="button" onClick={() => setEditing(l)}>
-                    Edit
-                  </button>
-                </td>
               </tr>
             ))}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={8}>No leads found.</td>
+                <td colSpan={7}>No leads found.</td>
               </tr>
             )}
           </tbody>

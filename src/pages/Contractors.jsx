@@ -1,8 +1,23 @@
 import { useEffect, useState } from 'react'
 import ContractorForm from '../components/ContractorForm'
+import DetailView from '../components/DetailView'
 import { listContractors, createContractor, updateContractor } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
+
+function contractorFields(c) {
+  return [
+    { label: 'Name', value: c.name },
+    { label: 'Contact Name', value: c.contact_name },
+    { label: 'Phone', value: c.phone },
+    { label: 'Email', value: c.email },
+    { label: 'Market', value: c.market },
+    { label: 'Pricing Tier', value: c.pricing_tier },
+    { label: 'Status', value: c.status },
+    { label: 'Notes', value: c.notes },
+    { label: 'Created At', value: c.created_at },
+  ]
+}
 
 const CSV_COLUMNS = [
   { key: 'name', label: 'Name' },
@@ -22,6 +37,7 @@ function Contractors() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
+  const [viewing, setViewing] = useState(null) // null = closed, object = viewing
 
   async function refresh(term = search) {
     setLoading(true)
@@ -53,6 +69,7 @@ function Contractors() {
       await createContractor(form)
     }
     setEditing(null)
+    setViewing(null)
     await refresh()
   }
 
@@ -82,6 +99,18 @@ function Contractors() {
         onChange={handleSearchChange}
       />
 
+      {viewing && !editing && (
+        <DetailView
+          title={viewing.name}
+          fields={contractorFields(viewing)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+          onClose={() => setViewing(null)}
+        />
+      )}
+
       {editing && (
         <ContractorForm
           initialValues={editing}
@@ -104,29 +133,27 @@ function Contractors() {
               <th>Market</th>
               <th>Tier</th>
               <th>Status</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {contractors.map((c) => (
               <tr key={c.id}>
-                <td>{c.name}</td>
+                <td>
+                  <button type="button" className="row-link" onClick={() => setViewing(c)}>
+                    {c.name}
+                  </button>
+                </td>
                 <td>{c.contact_name}</td>
                 <td>{c.phone}</td>
                 <td>{c.email}</td>
                 <td>{c.market}</td>
                 <td>{c.pricing_tier}</td>
                 <td>{c.status}</td>
-                <td>
-                  <button type="button" onClick={() => setEditing(c)}>
-                    Edit
-                  </button>
-                </td>
               </tr>
             ))}
             {contractors.length === 0 && (
               <tr>
-                <td colSpan={8}>No contractors found.</td>
+                <td colSpan={7}>No contractors found.</td>
               </tr>
             )}
           </tbody>

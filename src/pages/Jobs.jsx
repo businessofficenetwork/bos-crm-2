@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import ClaimForm from '../components/ClaimForm'
+import DetailView from '../components/DetailView'
 import {
   listClaims,
   createClaim,
@@ -9,6 +10,21 @@ import {
 } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
+
+function claimFields(c) {
+  return [
+    { label: 'Contractor', value: c.contractor?.name },
+    { label: 'Property Address', value: c.property_address },
+    { label: 'Homeowner Name', value: c.homeowner_name },
+    { label: 'Carrier', value: c.carrier },
+    { label: 'Claim #', value: c.claim_number },
+    { label: 'Adjuster Name', value: c.adjuster_name },
+    { label: 'Adjuster Contact', value: c.adjuster_contact },
+    { label: 'Date of Loss', value: c.date_of_loss },
+    { label: 'Notes', value: c.notes },
+    { label: 'Created At', value: c.created_at },
+  ]
+}
 
 const CSV_COLUMNS = [
   { key: 'contractor', label: 'Contractor', get: (row) => row.contractor?.name },
@@ -30,6 +46,7 @@ function Jobs() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
+  const [viewing, setViewing] = useState(null) // null = closed, object = viewing
 
   async function refresh(term = search) {
     setLoading(true)
@@ -64,6 +81,7 @@ function Jobs() {
       await createClaim(form)
     }
     setEditing(null)
+    setViewing(null)
     await refresh()
   }
 
@@ -110,6 +128,18 @@ function Jobs() {
         onChange={handleSearchChange}
       />
 
+      {viewing && !editing && (
+        <DetailView
+          title={viewing.property_address || viewing.claim_number || 'Job'}
+          fields={claimFields(viewing)}
+          onEdit={() => {
+            setEditing(viewing)
+            setViewing(null)
+          }}
+          onClose={() => setViewing(null)}
+        />
+      )}
+
       {editing && (
         <>
           <h3>{editing.id ? 'Edit Job' : editing.__intake ? 'New Intake' : 'Add Job'}</h3>
@@ -139,29 +169,27 @@ function Jobs() {
               <th>Claim #</th>
               <th>Adjuster</th>
               <th>Date of Loss</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {claims.map((c) => (
               <tr key={c.id}>
                 <td>{c.contractor?.name}</td>
-                <td>{c.property_address}</td>
+                <td>
+                  <button type="button" className="row-link" onClick={() => setViewing(c)}>
+                    {c.property_address || c.claim_number || 'View'}
+                  </button>
+                </td>
                 <td>{c.homeowner_name}</td>
                 <td>{c.carrier}</td>
                 <td>{c.claim_number}</td>
                 <td>{c.adjuster_name}</td>
                 <td>{c.date_of_loss}</td>
-                <td>
-                  <button type="button" onClick={() => setEditing(c)}>
-                    Edit
-                  </button>
-                </td>
               </tr>
             ))}
             {claims.length === 0 && (
               <tr>
-                <td colSpan={8}>No jobs found.</td>
+                <td colSpan={7}>No jobs found.</td>
               </tr>
             )}
           </tbody>
