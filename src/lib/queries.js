@@ -173,6 +173,20 @@ export async function listOverdueActions() {
   return data
 }
 
+// Every incomplete action across all supplements, earliest due date
+// first — used to show each Kanban card's next-action due date
+// without a separate query per card.
+export async function listAllPendingActions() {
+  const { data, error } = await supabase
+    .from('actions')
+    .select('*')
+    .eq('completed', false)
+    .order('due_date', { ascending: true, nullsFirst: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function countOverdueActions() {
   const today = new Date().toISOString().slice(0, 10)
   const { count, error } = await supabase
@@ -289,4 +303,57 @@ export async function listMentions() {
 export async function markCommentRead(id) {
   const { error } = await supabase.from('job_comments').update({ read: true }).eq('id', id)
   if (error) throw error
+}
+
+export async function listRequestedItems(supplementId) {
+  const { data, error } = await supabase
+    .from('supplement_requested_items')
+    .select('*')
+    .eq('supplement_id', supplementId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createRequestedItem(item) {
+  const { data, error } = await supabase
+    .from('supplement_requested_items')
+    .insert(item)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function setRequestedItemVerified(id, verified) {
+  const { error } = await supabase
+    .from('supplement_requested_items')
+    .update({ verified, verified_at: verified ? new Date().toISOString() : null })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function listSupplementActivity(supplementId) {
+  const { data, error } = await supabase
+    .from('supplement_activity')
+    .select('*')
+    .eq('supplement_id', supplementId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createSupplementActivity(entry) {
+  const { data, error } = await supabase
+    .from('supplement_activity')
+    .insert(entry)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }
