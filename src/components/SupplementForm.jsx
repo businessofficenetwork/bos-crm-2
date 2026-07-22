@@ -41,6 +41,9 @@ const emptyForm = {
   supplement_approved: '',
   bon_fee: '',
   notes: '',
+  closing_date: '',
+  complexity: '',
+  card_color: '',
   ...Object.fromEntries(DATE_FIELDS.map(([key]) => [key, ''])),
 }
 
@@ -59,6 +62,9 @@ function toPayload(form) {
   for (const [key] of DATE_FIELDS) {
     payload[key] = payload[key] === '' ? null : payload[key]
   }
+  payload.closing_date = payload.closing_date === '' ? null : payload.closing_date
+  payload.complexity = payload.complexity === '' ? null : payload.complexity
+  payload.card_color = payload.card_color === '' ? null : payload.card_color
   return payload
 }
 
@@ -75,6 +81,14 @@ function SupplementForm({ claims, initialValues, onSubmit, onCancel }) {
   function handleChange(e) {
     const { name, value } = e.target
     setForm((f) => ({ ...f, [name]: value }))
+  }
+
+  function handleClosingCheckbox(e) {
+    setForm((f) => ({ ...f, closing_date: e.target.checked ? f.closing_date || '' : '' }))
+  }
+
+  function handleCardColorCheckbox(e) {
+    setForm((f) => ({ ...f, card_color: e.target.checked ? f.card_color || '#e8a020' : '' }))
   }
 
   async function handleSubmit(e) {
@@ -159,6 +173,59 @@ function SupplementForm({ claims, initialValues, onSubmit, onCancel }) {
             onChange={handleChange}
           />
         </label>
+      </div>
+
+      <div className="form-row">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={!!form.closing_date}
+            onChange={handleClosingCheckbox}
+          />
+          Home is being sold (has a closing date)
+        </label>
+        {!!form.closing_date && (
+          <label>
+            Closing date
+            <input
+              name="closing_date"
+              type="date"
+              value={form.closing_date}
+              onChange={handleChange}
+            />
+          </label>
+        )}
+        <label>
+          Complexity
+          <select name="complexity" value={form.complexity ?? ''} onChange={handleChange}>
+            <option value="">Not set</option>
+            <option value="roof_only">Roof Only</option>
+            <option value="multiple_trades">Multiple Trades</option>
+            <option value="complex">Complex</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="form-row">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={!!form.card_color}
+            onChange={handleCardColorCheckbox}
+          />
+          Highlight this card with a custom color
+        </label>
+        {!!form.card_color && (
+          <label>
+            Card color
+            <input
+              name="card_color"
+              type="color"
+              value={form.card_color}
+              onChange={handleChange}
+            />
+          </label>
+        )}
       </div>
 
       <fieldset className="stage-dates">
