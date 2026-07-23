@@ -1,40 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import SupplementForm from '../components/SupplementForm'
-import ActionsPanel from '../components/ActionsPanel'
-import DetailView from '../components/DetailView'
-import { listSupplements, createSupplement, updateSupplement, listClaims } from '../lib/queries'
+import KanbanBoard from '../components/KanbanBoard'
+import SupplementListView from '../components/SupplementListView'
+import SupplementModal from '../components/SupplementModal'
+import {
+  listSupplements,
+  createSupplement,
+  updateSupplement,
+  listClaims,
+  listAllPendingActions,
+} from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
-
-function money(value) {
-  return value === null || value === undefined ? '' : `$${Number(value).toFixed(2)}`
-}
-
-function supplementFields(s) {
-  return [
-    { label: 'Claim', value: s.claim?.property_address },
-    { label: 'Claim #', value: s.claim?.claim_number },
-    { label: 'Contractor', value: s.claim?.contractor?.name },
-    { label: 'Stage', value: s.stage },
-    { label: 'Original Estimate RCV', value: money(s.original_estimate_rcv) },
-    { label: 'Supplement Requested', value: money(s.supplement_requested) },
-    { label: 'Supplement Approved', value: money(s.supplement_approved) },
-    { label: 'BON Fee', value: money(s.bon_fee) },
-    { label: 'Intake Date', value: s.intake_date },
-    { label: 'Docs Received Date', value: s.docs_received_date },
-    { label: 'Reviewed Date', value: s.reviewed_date },
-    { label: 'Supplement Written Date', value: s.supplement_written_date },
-    { label: 'Submitted Date', value: s.submitted_date },
-    { label: 'Carrier Response Date', value: s.carrier_response_date },
-    { label: 'Approved Date', value: s.approved_date },
-    { label: 'Paid Date', value: s.paid_date },
-    { label: 'Invoiced Date', value: s.invoiced_date },
-    { label: 'Closed Date', value: s.closed_date },
-    { label: 'Notes', value: s.notes },
-    { label: 'Created At', value: s.created_at },
-  ]
-}
+import './Pipeline.css'
 
 const CSV_COLUMNS = [
   { key: 'claim_address', label: 'Claim', get: (row) => row.claim?.property_address },
@@ -45,6 +23,8 @@ const CSV_COLUMNS = [
   { key: 'supplement_requested', label: 'Supplement Requested' },
   { key: 'supplement_approved', label: 'Supplement Approved' },
   { key: 'bon_fee', label: 'BON Fee' },
+  { key: 'closing_date', label: 'Closing Date' },
+  { key: 'complexity', label: 'Complexity' },
   { key: 'intake_date', label: 'Intake Date' },
   { key: 'docs_received_date', label: 'Docs Received Date' },
   { key: 'reviewed_date', label: 'Reviewed Date' },
@@ -59,14 +39,25 @@ const CSV_COLUMNS = [
   { key: 'created_at', label: 'Created At' },
 ]
 
+function groupNextActions(actions) {
+  const map = {}
+  for (const action of actions) {
+    if (!map[action.supplement_id]) {
+      map[action.supplement_id] = action
+    }
+  }
+  return map
+}
+
 function Pipeline() {
   const [supplements, setSupplements] = useState([])
   const [claims, setClaims] = useState([])
+  const [nextActionsBySupplement, setNextActionsBySupplement] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
-  const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
-  const [viewing, setViewing] = useState(null) // null = closed, object = viewing
+  const [view, setView] = useState('board') // 'board' or 'list'
+  const [viewing, setViewing] = useState(null) // null = closed, {} = new, object = viewing/editing
   const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
@@ -74,7 +65,7 @@ function Pipeline() {
     if (!openId || supplements.length === 0) return
     const match = supplements.find((s) => s.id === openId)
     if (match) {
-      setEditing(match)
+      setViewing(match)
     }
     setSearchParams({}, { replace: true })
   }, [supplements, searchParams, setSearchParams])
@@ -85,17 +76,14 @@ function Pipeline() {
     try {
       const data = await listSupplements(term)
       setSupplements(data)
+      return data
     } catch (err) {
       setError(err.message)
+      return []
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    refresh('')
-    listClaims().then(setClaims).catch((err) => setError(err.message))
-  }, [])
 
   function handleSearchChange(e) {
     const value = e.target.value
@@ -103,15 +91,36 @@ function Pipeline() {
     refresh(value)
   }
 
-  async function handleSubmit(form) {
-    if (editing.id) {
-      await updateSupplement(editing.id, form)
+  async function refreshActions() {
+    try {
+      const actions = await listAllPendingActions()
+      setNextActionsBySupplement(groupNextActions(actions))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+    refreshActions()
+    listClaims().then(setClaims).catch((err) => setError(err.message))
+  }, [])
+
+  async function handleSave(target, form) {
+    if (target.id) {
+      await updateSupplement(target.id, form)
     } else {
       await createSupplement(form)
     }
-    setEditing(null)
+    const data = await refresh()
+    if (target.id) {
+      setViewing(data.find((s) => s.id === target.id) || null)
+    }
+  }
+
+  function handleClose() {
     setViewing(null)
-    await refresh()
+    refreshActions()
   }
 
   function handleExport() {
@@ -123,12 +132,26 @@ function Pipeline() {
       <div className="contractors-header">
         <h1>Pipeline</h1>
         <div className="header-actions">
+          <button
+            type="button"
+            className={view === 'board' ? 'view-toggle active' : 'view-toggle'}
+            onClick={() => setView('board')}
+          >
+            Board
+          </button>
+          <button
+            type="button"
+            className={view === 'list' ? 'view-toggle active' : 'view-toggle'}
+            onClick={() => setView('list')}
+          >
+            List
+          </button>
           <button type="button" onClick={handleExport} disabled={supplements.length === 0}>
             Export CSV
           </button>
           <button
             type="button"
-            onClick={() => setEditing({})}
+            onClick={() => setViewing({})}
             disabled={claims.length === 0}
             title={claims.length === 0 ? 'Add a job first' : undefined}
           >
@@ -147,69 +170,32 @@ function Pipeline() {
         onChange={handleSearchChange}
       />
 
-      {viewing && !editing && (
-        <DetailView
-          title={viewing.claim?.property_address || viewing.claim?.claim_number || 'Supplement'}
-          fields={supplementFields(viewing)}
-          onEdit={() => {
-            setEditing(viewing)
-            setViewing(null)
-          }}
-          onClose={() => setViewing(null)}
-        />
-      )}
-
-      {editing && (
-        <>
-          <SupplementForm
-            claims={claims}
-            initialValues={editing}
-            onSubmit={handleSubmit}
-            onCancel={() => setEditing(null)}
-          />
-          {editing.id && <ActionsPanel supplementId={editing.id} />}
-        </>
-      )}
-
       {loading && <p>Loading…</p>}
       {error && <p className="form-error">{error}</p>}
 
-      {!loading && !error && (
-        <table className="contractors-table">
-          <thead>
-            <tr>
-              <th>Claim</th>
-              <th>Contractor</th>
-              <th>Stage</th>
-              <th>Est. RCV</th>
-              <th>Supp. Requested</th>
-              <th>Supp. Approved</th>
-              <th>BON Fee</th>
-            </tr>
-          </thead>
-          <tbody>
-            {supplements.map((s) => (
-              <tr key={s.id}>
-                <td>
-                  <button type="button" className="row-link" onClick={() => setViewing(s)}>
-                    {s.claim?.property_address || s.claim?.claim_number || 'View'}
-                  </button>
-                </td>
-                <td>{s.claim?.contractor?.name}</td>
-                <td>{s.stage}</td>
-                <td>{money(s.original_estimate_rcv)}</td>
-                <td>{money(s.supplement_requested)}</td>
-                <td>{money(s.supplement_approved)}</td>
-                <td>{money(s.bon_fee)}</td>
-              </tr>
-            ))}
-            {supplements.length === 0 && (
-              <tr>
-                <td colSpan={7}>No supplements found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {!loading && !error && view === 'board' && (
+        <KanbanBoard
+          supplements={supplements}
+          nextActionsBySupplement={nextActionsBySupplement}
+          onCardClick={setViewing}
+        />
+      )}
+
+      {!loading && !error && view === 'list' && (
+        <SupplementListView
+          supplements={supplements}
+          nextActionsBySupplement={nextActionsBySupplement}
+          onRowClick={setViewing}
+        />
+      )}
+
+      {viewing && (
+        <SupplementModal
+          supplement={viewing}
+          claims={claims}
+          onSave={handleSave}
+          onClose={handleClose}
+        />
       )}
     </div>
   )

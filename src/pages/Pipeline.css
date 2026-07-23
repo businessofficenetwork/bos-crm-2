@@ -1,0 +1,274 @@
+:root {
+  --stage-intake: #c0392b;
+  --stage-docs-received: #e75480;
+  --stage-reviewed: #b5540a;
+  --stage-supplement-written: #f2a65a;
+  --stage-submitted: #f5e07a;
+  --stage-carrier-response: #f7d716;
+  --stage-approved: #1e5631;
+  --stage-paid: #4caf50;
+  --stage-invoiced: #3a7fd5;
+  --stage-closed: #6c3483;
+}
+
+.kanban-sort {
+  margin-bottom: 1rem;
+}
+
+.kanban-sort label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--light-dim);
+}
+
+.kanban-board {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.kanban-column {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--dark2);
+  border: 1px solid var(--dark4);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.65rem;
+  font-family: var(--heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--light);
+  background: var(--dark3);
+  border: 2px solid var(--dark4);
+}
+
+.kanban-column-count {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  min-height: 60px;
+}
+
+.kanban-column-empty {
+  color: var(--light-dim);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.kanban-card {
+  position: relative;
+  border-radius: 6px;
+  padding: 0.6rem 0.65rem;
+  cursor: pointer;
+  color: var(--light);
+  background: var(--dark3);
+  border: 3px solid var(--dark4);
+}
+
+.kanban-card:hover {
+  filter: brightness(1.08);
+}
+
+.kanban-card-title {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  padding-right: 1.25rem;
+}
+
+.kanban-card-row {
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.kanban-card-closing input {
+  vertical-align: middle;
+}
+
+.kanban-card-complexity {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.kanban-card-next-action {
+  margin-top: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.kanban-card-next-action.overdue {
+  color: var(--red);
+}
+
+.kanban-card-next-action.due-soon {
+  color: #7a5a00;
+}
+
+.kanban-card-alert {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--light);
+  font-weight: 800;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Column headers: outline only, same treatment as cards */
+.kanban-column-header.stage-intake {
+  border-color: var(--stage-intake);
+}
+.kanban-column-header.stage-docs-received {
+  border-color: var(--stage-docs-received);
+}
+.kanban-column-header.stage-reviewed {
+  border-color: var(--stage-reviewed);
+}
+.kanban-column-header.stage-supplement-written {
+  border-color: var(--stage-supplement-written);
+}
+.kanban-column-header.stage-submitted {
+  border-color: var(--stage-submitted);
+}
+.kanban-column-header.stage-carrier-response {
+  border-color: var(--stage-carrier-response);
+}
+.kanban-column-header.stage-approved {
+  border-color: var(--stage-approved);
+}
+.kanban-column-header.stage-paid {
+  border-color: var(--stage-paid);
+}
+.kanban-column-header.stage-invoiced {
+  border-color: var(--stage-invoiced);
+}
+.kanban-column-header.stage-closed {
+  border-color: var(--stage-closed);
+}
+
+/* Cards: stage color shown as an outline only; background stays neutral
+   (or the manually-picked card_color, applied inline) so the card
+   itself doesn't fight with a custom highlight color. */
+.kanban-card.stage-intake {
+  border-color: var(--stage-intake);
+}
+.kanban-card.stage-docs-received {
+  border-color: var(--stage-docs-received);
+}
+.kanban-card.stage-reviewed {
+  border-color: var(--stage-reviewed);
+}
+.kanban-card.stage-supplement-written {
+  border-color: var(--stage-supplement-written);
+}
+.kanban-card.stage-submitted {
+  border-color: var(--stage-submitted);
+}
+.kanban-card.stage-carrier-response {
+  border-color: var(--stage-carrier-response);
+}
+.kanban-card.stage-approved {
+  border-color: var(--stage-approved);
+}
+.kanban-card.stage-paid {
+  border-color: var(--stage-paid);
+}
+.kanban-card.stage-invoiced {
+  border-color: var(--stage-invoiced);
+}
+.kanban-card.stage-closed {
+  border-color: var(--stage-closed);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+  z-index: 100;
+}
+
+.modal-window {
+  width: 100%;
+  max-width: 640px;
+}
+
+.view-toggle.active {
+  background: var(--gold);
+  color: var(--dark);
+  border-color: var(--gold);
+}
+
+.list-stage-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.list-stage-dot.stage-intake {
+  background: var(--stage-intake);
+}
+.list-stage-dot.stage-docs-received {
+  background: var(--stage-docs-received);
+}
+.list-stage-dot.stage-reviewed {
+  background: var(--stage-reviewed);
+}
+.list-stage-dot.stage-supplement-written {
+  background: var(--stage-supplement-written);
+}
+.list-stage-dot.stage-submitted {
+  background: var(--stage-submitted);
+}
+.list-stage-dot.stage-carrier-response {
+  background: var(--stage-carrier-response);
+}
+.list-stage-dot.stage-approved {
+  background: var(--stage-approved);
+}
+.list-stage-dot.stage-paid {
+  background: var(--stage-paid);
+}
+.list-stage-dot.stage-invoiced {
+  background: var(--stage-invoiced);
+}
+.list-stage-dot.stage-closed {
+  background: var(--stage-closed);
+}
