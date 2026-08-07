@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BON Client Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --navy:#1F3A5F; --navy-deep:#16293F; --steel:#3E5C76; --gold:#B08D2E; --gold-bright:#C9A43C;
+  --light:#EEF2F6; --paper:#FAFBFC; --ink:#22252A; --grey:#5A6472; --line:#D8DEE6;
+  --green:#2E5E3A; --red:#8A2A2A; --amber:#7A5A00;
+  --disp:'Barlow Condensed',sans-serif; --body:'Segoe UI',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5}
+a{color:var(--steel);text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+
+/* ── LAYOUT ── */
+.hidden{display:none!important}
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--navy-deep);color:#fff;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:var(--disp),sans-serif;font-weight:700;font-size:22px;letter-spacing:.05em;color:#fff}
+.logo span{color:var(--gold-bright)}
+.co-name{font-size:14px;color:#C7D3E0;border-left:1px solid rgba(255,255,255,.2);padding-left:14px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.btn-sm{background:rgba(255,255,255,.12);color:#fff;border:none;padding:6px 14px;font-size:13px;font-weight:600}
+.btn-sm:hover{background:rgba(255,255,255,.22)}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--gold-bright);display:inline-block;margin-left:4px}
+
+/* ── NAV TABS ── */
+.tabs{background:#fff;border-bottom:1px solid var(--line);padding:0 20px;display:flex;gap:4px}
+.tab-btn{padding:12px 16px;font-size:14px;font-weight:600;color:var(--grey);background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--gold)}
+.tab-btn:hover{color:var(--navy)}
+
+/* ── MAIN ── */
+.main{flex:1;padding:24px 20px;max-width:1200px;margin:0 auto;width:100%}
+
+/* ── CARDS / SECTIONS ── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--disp),sans-serif;font-weight:700;font-size:22px;text-transform:uppercase;color:var(--navy);letter-spacing:.02em}
+.card{background:#fff;border:1px solid var(--line);margin-bottom:14px;overflow:hidden}
+.card-head{background:var(--light);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-body{padding:16px}
+
+/* ── STAGE BADGE ── */
+.badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;display:inline-block;white-space:nowrap}
+.badge-intake{background:#E8F0F8;color:var(--navy)}
+.badge-docs{background:#FFF3CD;color:#7A5A00}
+.badge-reviewed{background:#E8F8EC;color:var(--green)}
+.badge-written{background:#D6EAF8;color:#1A5276}
+.badge-submitted{background:#EBF5FB;color:#21618C}
+.badge-carrier{background:#FDEBD0;color:#784212}
+.badge-approved{background:#D5F5E3;color:var(--green)}
+.badge-closed{background:var(--light);color:var(--grey)}
+
+/* ── QUEUE TABLE ── */
+.queue-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;padding:10px 12px;background:var(--navy);color:#fff;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:var(--light)}
+tr:last-child td{border-bottom:none}
+.link-btn{color:var(--steel);font-weight:600;background:none;border:none;font-size:13px;padding:0;text-decoration:underline}
+.link-btn:hover{color:var(--navy)}
+
+/* ── DETAIL VIEW ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.detail-block{background:var(--light);padding:14px 16px}
+.detail-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--grey);margin-bottom:4px}
+.detail-val{font-size:15px;color:var(--ink);font-weight:600}
+.detail-val.empty{color:var(--grey);font-weight:400;font-style:italic}
+.timeline{margin-top:20px}
+.timeline-row{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.timeline-stage{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);min-width:180px}
+.timeline-date{font-family:var(--mono);font-size:13px;color:var(--navy)}
+.timeline-empty{font-family:var(--mono);font-size:13px;color:var(--line)}
+.check-icon{width:16px;height:16px;flex:0 0 16px;border-radius:50%;background:var(--green);display:inline-flex;align-items:center;justify-content:center}
+.check-icon::after{content:"✓";color:#fff;font-size:10px}
+.pending-icon{width:16px;height:16px;flex:0 0 16px;border-radius:50%;border:2px solid var(--line)}
+
+/* ── DOLLAR AMOUNTS ── */
+.amt{font-family:var(--mono);font-weight:600;font-size:14px}
+.amt-approved{color:var(--green)}
+.amt-pending{color:var(--amber)}
+.amt-null{color:var(--grey)}
+
+/* ── MESSAGES ── */
+.msg-thread{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding:4px 0 14px}
+.msg-bubble{max-width:80%;padding:10px 14px;border-radius:2px;font-size:14px;line-height:1.5}
+.msg-bon{background:var(--navy);color:#fff;align-self:flex-start}
+.msg-contractor{background:var(--light);color:var(--ink);align-self:flex-end;border:1px solid var(--line)}
+.msg-meta{font-size:11px;opacity:.65;margin-top:4px}
+.msg-input-row{display:flex;gap:10px;margin-top:12px}
+.msg-input{flex:1;padding:10px 12px;border:1.5px solid var(--line);font-family:inherit;font-size:14px;resize:none;min-height:80px}
+.msg-input:focus{outline:none;border-color:var(--navy)}
+.btn-primary{background:var(--gold);color:#fff;border:none;padding:10px 22px;font-weight:700;font-size:15px}
+.btn-primary:hover{background:var(--gold-bright)}
+.btn-secondary{background:var(--light);color:var(--navy);border:1px solid var(--line);padding:8px 18px;font-weight:600;font-size:14px}
+.btn-secondary:hover{background:#E3E9F0}
+.btn-back{background:none;border:none;color:var(--steel);font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;padding:0;margin-bottom:16px}
+.btn-back:hover{color:var(--navy)}
+.btn-back::before{content:"←"}
+
+/* ── SUBMIT CLAIM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--steel)}
+.field input,.field select,.field textarea{padding:10px 12px;border:1.5px solid var(--line);font-family:inherit;font-size:15px;background:var(--paper)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--navy)}
+.field textarea{min-height:80px;resize:vertical}
+.full-span{grid-column:1/-1}
+.form-actions{display:flex;gap:12px;margin-top:20px}
+
+/* ── STATS STRIP ── */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.stat{background:#fff;border:1px solid var(--line);padding:16px;text-align:center}
+.stat .n{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--navy)}
+.stat .k{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);margin-top:3px}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(175deg,var(--navy) 0%,var(--navy-deep) 100%)}
+.login-box{background:#fff;width:100%;max-width:400px;overflow:hidden}
+.login-head{background:var(--navy-deep);padding:28px 28px 22px;color:#fff}
+.login-logo{font-family:var(--disp),sans-serif;font-weight:700;font-size:28px;letter-spacing:.05em;margin-bottom:6px}
+.login-logo span{color:var(--gold-bright)}
+.login-sub{font-size:14px;color:#C7D3E0}
+.login-body{padding:28px}
+.login-body .field{margin-bottom:16px}
+.login-error{background:#FFF0F0;border:1px solid #FCCACA;color:var(--red);padding:10px 14px;font-size:14px;margin-bottom:14px}
+.login-foot{padding:16px 28px;background:var(--light);border-top:1px solid var(--line);font-size:13px;color:var(--grey)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--grey)}
+.empty .icon{font-size:40px;margin-bottom:12px}
+.empty .title{font-weight:700;font-size:16px;color:var(--navy);margin-bottom:6px}
+.empty p{font-size:14px}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:40px;color:var(--grey);font-style:italic}
+
+/* ── ALERT ── */
+.alert{padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:600}
+.alert-success{background:#D5F5E3;color:var(--green)}
+.alert-error{background:#FFF0F0;color:var(--red)}
+
+@media(max-width:680px){
+  .form-grid,.detail-grid,.stats-strip{grid-template-columns:1fr}
+  .main{padding:16px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-head">
+        <div class="login-logo">B<span>O</span>N <span style="font-size:16px;font-weight:500;color:#93A6BA;letter-spacing:.06em">CLIENT PORTAL</span></div>
+        <div class="login-sub">Sign in to view your supplement queue and claims status.</div>
+      </div>
+      <div class="login-body">
+        <div id="loginError" class="login-error hidden"></div>
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="loginUser" placeholder="your company username" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" style="width:100%;padding:12px" onclick="doLogin()">Sign in</button>
+      </div>
+      <div class="login-foot">
+        Questions? Call Keri at (918) 526-3300 or email supplements@businessofficenetwork.com
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PORTAL APP ── -->
+<div id="app" class="hidden">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">B<span>O</span>N</div>
+      <div class="co-name" id="companyName">Loading…</div>
+    </div>
+    <div class="topbar-right">
+      <span id="unreadBadge" class="hidden" style="font-size:13px;color:var(--gold-bright)">● New message</span>
+      <button class="btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('queue',this)">Supplement Queue</button>
+    <button class="tab-btn" onclick="showTab('messages',this)">Messages</button>
+    <button class="tab-btn" onclick="showTab('submit',this)">Submit a Claim</button>
+  </div>
+
+  <div class="main">
+
+    <!-- QUEUE TAB -->
+    <div id="tab-queue">
+      <div id="alert" class="hidden"></div>
+      <div class="stats-strip" id="statsStrip">
+        <div class="stat"><div class="n" id="statTotal">—</div><div class="k">Total Claims</div></div>
+        <div class="stat"><div class="n" id="statActive">—</div><div class="k">In Progress</div></div>
+        <div class="stat"><div class="n" id="statApproved">—</div><div class="k">Approved</div></div>
+        <div class="stat"><div class="n" id="statRecovered" style="font-size:20px">—</div><div class="k">Total Recovered</div></div>
+      </div>
+      <div class="section-head">
+        <div class="section-title">Your Supplement Queue</div>
+      </div>
+      <div id="queueContent"><div class="loading">Loading your queue…</div></div>
+    </div>
+
+    <!-- DETAIL VIEW (hidden initially) -->
+    <div id="tab-detail" class="hidden">
+      <button class="btn-back" onclick="backToQueue()">Back to queue</button>
+      <div id="detailContent"></div>
+    </div>
+
+    <!-- MESSAGES TAB -->
+    <div id="tab-messages" class="hidden">
+      <div class="section-head">
+        <div class="section-title">Messages</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="msg-thread" id="msgThread"><div class="loading">Loading messages…</div></div>
+          <div class="msg-input-row">
+            <textarea class="msg-input" id="msgText" placeholder="Type a message to Keri…"></textarea>
+            <button class="btn-primary" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT TAB -->
+    <div id="tab-submit" class="hidden">
+      <div class="section-head">
+        <div class="section-title">Submit a New Claim</div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div id="submitAlert" class="hidden alert"></div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Property Address *</label>
+              <input type="text" id="sf_address" placeholder="123 Main St, Tulsa OK 74103">
+            </div>
+            <div class="field">
+              <label>Homeowner Name *</label>
+              <input type="text" id="sf_homeowner" placeholder="Jane Smith">
+            </div>
+            <div class="field">
+              <label>Insurance Carrier *</label>
+              <input type="text" id="sf_carrier" placeholder="State Farm, Allstate…">
+            </div>
+            <div class="field">
+              <label>Claim Number</label>
+              <input type="text" id="sf_claim_num" placeholder="Optional but helpful">
+            </div>
+            <div class="field">
+              <label>Adjuster Name</label>
+              <input type="text" id="sf_adjuster_name" placeholder="Optional">
+            </div>
+            <div class="field">
+              <label>Adjuster Contact</label>
+              <input type="text" id="sf_adjuster_contact" placeholder="Phone or email">
+            </div>
+            <div class="field">
+              <label>Date of Loss</label>
+              <input type="date" id="sf_dol">
+            </div>
+            <div class="field">
+              <label>Complexity</label>
+              <select id="sf_complexity">
+                <option value="">Select tier…</option>
+                <option value="simple">Simple — $350 (missed items, measurements, code)</option>
+                <option value="semi-complex">Semi-complex — $600 (multi-trade, O&P)</option>
+                <option value="complex">Complex — $950 (paint, windows, full reconciliation)</option>
+              </select>
+            </div>
+            <div class="field full-span">
+              <label>Upload Documents <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--grey)">— carrier estimate, measurements, photo report (PDF, JPG, PNG)</span></label>
+              <input type="file" id="sf_files" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
+                style="padding:10px 12px;border:1.5px solid var(--line);background:var(--paper);font-size:14px">
+              <div id="sf_file_list" style="font-size:13px;color:var(--grey);margin-top:4px"></div>
+            </div>
+            <div class="field full-span">
+              <label>Notes for Keri</label>
+              <textarea id="sf_notes" placeholder="Anything I should know about this claim…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="submitClaim()">Submit claim</button>
+            <button class="btn-secondary" onclick="clearForm()">Clear</button>
+          </div>
+          <p style="font-size:13px;color:var(--grey);margin-top:14px">After submitting, send the carrier estimate, measurements, and photo report to <strong>supplements@businessofficenetwork.com</strong> to start the clock.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── CONFIG ── Replace with your values before deploying
+const SUPABASE_URL = 'https://ezfrtcbmyifevyepgoym.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6ZnJ0Y2JteWlmZXZ5ZXBnb3ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5ODc1MDksImV4cCI6MjA5OTU2MzUwOX0.ijDR9I9tL5kctgV7CwQSdoFdr6JlPNuWR7YKIIq124Y';
+
+const { createClient } = supabase;
+const db = createClient(https://ezfrtcbmyifevyepgoym.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6ZnJ0Y2JteWlmZXZ5ZXBnb3ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5ODc1MDksImV4cCI6MjA5OTU2MzUwOX0.ijDR9I9tL5kctgV7CwQSdoFdr6JlPNuWR7YKIIq124Y);
+
+// ── STATE ──
+let currentContractor = null;
+let currentPortalUser = null;
+let allSupplements = [];
+
+// ── STAGE CONFIG ──
+const STAGES = [
+  {key:'Intake',        label:'Received',              badge:'badge-intake'},
+  {key:'Docs Received', label:'Docs Received',          badge:'badge-docs'},
+  {key:'Reviewed',      label:'Reviewed',               badge:'badge-reviewed'},
+  {key:'Supplement Written', label:'Supplement Written',badge:'badge-written'},
+  {key:'Submitted',     label:'Submitted to Carrier',   badge:'badge-submitted'},
+  {key:'Carrier Response', label:'Carrier Responded',   badge:'badge-carrier'},
+  {key:'Approved',      label:'Approved',               badge:'badge-approved'},
+  {key:'Closed',        label:'Closed',                 badge:'badge-closed'},
+];
+
+function stageBadge(stage) {
+  const s = STAGES.find(x => x.key === stage) || {label:stage, badge:'badge-intake'};
+  return `<span class="badge ${s.badge}">${s.label}</span>`;
+}
+
+// ── LOGIN ──
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim().toLowerCase();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  if (!username || !password) { showLoginError('Please enter your username and password.'); return; }
+
+  const { data, error } = await db
+    .from('portal_users')
+    .select('*, contractors(*)')
+    .eq('username', username)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data) { showLoginError('Username not found.'); return; }
+  if (data.portal_password !== password) { showLoginError('Incorrect password.'); return; }
+
+  // Update last login
+  await db.from('portal_users').update({ last_login: new Date().toISOString() }).eq('id', data.id);
+
+  currentPortalUser = data;
+  currentContractor = data.contractors;
+  sessionStorage.setItem('bon_portal_user', JSON.stringify({ id: data.id, contractor_id: data.contractor_id }));
+
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('companyName').textContent = currentContractor.name;
+  loadQueue();
+  loadMessages();
+  checkUnread();
+}
+
+function showLoginError(msg) {
+  const e = document.getElementById('loginError');
+  e.textContent = msg;
+  e.classList.remove('hidden');
+}
+
+function logout() {
+  sessionStorage.removeItem('bon_portal_user');
+  currentContractor = null; currentPortalUser = null; allSupplements = [];
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ── TABS ──
+function showTab(name, btn) {
+  ['queue','messages','submit','detail'].forEach(t => {
+    document.getElementById('tab-'+t).classList.add('hidden');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  if (btn) btn.classList.add('active');
+  if (name === 'messages') { markMessagesRead(); }
+}
+
+// ── QUEUE ──
+async function loadQueue() {
+  const cid = currentContractor.id;
+  const { data: claims } = await db.from('claims').select('*').eq('contractor_id', cid);
+  if (!claims || claims.length === 0) {
+    document.getElementById('queueContent').innerHTML = `
+      <div class="empty"><div class="icon">📋</div>
+      <div class="title">No claims yet</div>
+      <p>Use the "Submit a Claim" tab to get started.</p></div>`;
+    updateStats([]);
+    return;
+  }
+  const claimIds = claims.map(c => c.id);
+  const { data: supps } = await db.from('supplements').select('*').in('claim_id', claimIds).order('created_at', {ascending:false});
+  allSupplements = supps || [];
+  const claimMap = {};
+  claims.forEach(c => claimMap[c.id] = c);
+
+  updateStats(allSupplements);
+
+  if (allSupplements.length === 0) {
+    document.getElementById('queueContent').innerHTML = `
+      <div class="empty"><div class="icon">⏳</div>
+      <div class="title">Claims received — supplements coming</div>
+      <p>You'll see your queue here once we begin work on each claim.</p></div>`;
+    return;
+  }
+
+  const rows = allSupplements.map(s => {
+    const claim = claimMap[s.claim_id] || {};
+    return `<tr>
+      <td><button class="link-btn" onclick="showDetail('${s.id}')">${claim.property_address || '—'}</button><br>
+          <span style="font-size:12px;color:var(--grey)">${claim.homeowner_name||''}</span></td>
+      <td>${claim.carrier||'—'}</td>
+      <td>${claim.claim_number||'—'}</td>
+      <td>${stageBadge(s.stage)}</td>
+      <td class="amt ${s.supplement_approved ? 'amt-approved' : 'amt-pending'}">
+        ${s.supplement_approved ? '$'+Number(s.supplement_approved).toLocaleString() : s.supplement_requested ? '$'+Number(s.supplement_requested).toLocaleString()+' req.' : '—'}</td>
+      <td style="font-size:12px;color:var(--grey)">${s.intake_date || s.created_at?.slice(0,10) || '—'}</td>
+      <td><button class="link-btn" onclick="showDetail('${s.id}')">View →</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('queueContent').innerHTML = `
+    <div class="queue-wrap"><table>
+      <thead><tr>
+        <th>Property</th><th>Carrier</th><th>Claim #</th><th>Status</th>
+        <th>Amount</th><th>Received</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function updateStats(supps) {
+  const active = supps.filter(s => !['Closed','Approved'].includes(s.stage)).length;
+  const approved = supps.filter(s => s.stage === 'Approved').length;
+  const recovered = supps.reduce((sum,s) => sum + (Number(s.supplement_approved)||0), 0);
+  document.getElementById('statTotal').textContent = supps.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statApproved').textContent = approved;
+  document.getElementById('statRecovered').textContent = recovered ? '$'+recovered.toLocaleString() : '—';
+}
+
+// ── DETAIL ──
+async function showDetail(suppId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  ['queue','messages','submit'].forEach(t => document.getElementById('tab-'+t).classList.add('hidden'));
+  document.getElementById('tab-detail').classList.remove('hidden');
+  document.getElementById('detailContent').innerHTML = '<div class="loading">Loading…</div>';
+
+  const supp = allSupplements.find(s => s.id === suppId);
+  const { data: claim } = await db.from('claims').select('*').eq('id', supp.claim_id).single();
+
+  const timelineItems = [
+    {stage:'Intake', date: supp.intake_date},
+    {stage:'Docs Received', date: supp.docs_received_date},
+    {stage:'Reviewed', date: supp.reviewed_date},
+    {stage:'Supplement Written', date: supp.supplement_written_date},
+    {stage:'Submitted to Carrier', date: supp.submitted_date},
+    {stage:'Carrier Response', date: supp.carrier_response_date},
+    {stage:'Approved', date: supp.approved_date},
+    {stage:'Closed', date: supp.closed_date},
+  ];
+
+  const tlHtml = timelineItems.map(t => `
+    <div class="timeline-row">
+      <span class="${t.date ? 'check-icon' : 'pending-icon'}"></span>
+      <span class="timeline-stage">${t.stage}</span>
+      <span class="${t.date ? 'timeline-date' : 'timeline-empty'}">${t.date || 'Pending'}</span>
+    </div>`).join('');
+
+  const f = v => v ? '$'+Number(v).toLocaleString() : '—';
+
+  // Check for uploaded docs for this claim
+  const { data: docFiles } = await db.storage.from('claim-docs').list(claim.id, {limit: 30});
+  const docsHtml = docFiles && docFiles.length > 0
+    ? '<div style="margin-top:20px"><div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--grey);margin-bottom:8px">Uploaded Documents</div>' +
+      docFiles.map(f => {
+        const path = `${claim.id}/${f.name}`;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px">
+          <span>📄 ${f.name}</span>
+          <button class="link-btn" onclick="downloadDoc('${path}','${f.name}')">Download</button>
+        </div>`;
+      }).join('') + '</div>'
+    : '';
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div style="font-weight:700;font-size:17px">${claim.property_address||'Property'}</div>
+          <div style="font-size:13px;color:var(--grey)">${claim.homeowner_name||''} · ${claim.carrier||''} · Claim #${claim.claim_number||'—'}</div>
+        </div>
+        ${stageBadge(supp.stage)}
+      </div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-block"><div class="detail-label">Original Estimate (RCV)</div>
+            <div class="detail-val ${!supp.original_estimate_rcv?'empty':''}">${f(supp.original_estimate_rcv)}</div></div>
+          <div class="detail-block"><div class="detail-label">Supplement Requested</div>
+            <div class="detail-val ${!supp.supplement_requested?'empty':''}">${f(supp.supplement_requested)}</div></div>
+          <div class="detail-block"><div class="detail-label">Supplement Approved</div>
+            <div class="detail-val amt-approved ${!supp.supplement_approved?'empty':''}">${f(supp.supplement_approved)}</div></div>
+          <div class="detail-block"><div class="detail-label">BON Fee</div>
+            <div class="detail-val ${!supp.bon_fee?'empty':''}">${f(supp.bon_fee)}</div></div>
+          <div class="detail-block"><div class="detail-label">Complexity</div>
+            <div class="detail-val ${!supp.complexity?'empty':''}">${supp.complexity||'—'}</div></div>
+          <div class="detail-block"><div class="detail-label">Adjuster</div>
+            <div class="detail-val ${!claim.adjuster_name?'empty':''}">${claim.adjuster_name||'—'}</div></div>
+        </div>
+        ${supp.notes && supp.notes !== 'EMPTY' ? `
+        <div style="margin-top:16px;padding:14px 16px;background:var(--light);border-left:4px solid var(--gold)">
+          <div class="detail-label" style="margin-bottom:6px">Notes from BON</div>
+          <div style="font-size:14px">${supp.notes}</div>
+        </div>` : ''}
+        <div class="timeline" style="margin-top:20px">
+          <div style="font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--grey);margin-bottom:8px">Progress Timeline</div>
+          ${tlHtml}
+        </div>
+      </div>
+      ${docsHtml}
+    </div>`;
+}
+
+function backToQueue() {
+  document.getElementById('tab-detail').classList.add('hidden');
+  document.getElementById('tab-queue').classList.remove('hidden');
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+}
+
+// ── MESSAGES ──
+async function loadMessages() {
+  const { data: msgs } = await db.from('portal_messages')
+    .select('*')
+    .eq('contractor_id', currentContractor.id)
+    .order('created_at', {ascending:true});
+
+  const thread = document.getElementById('msgThread');
+  if (!msgs || msgs.length === 0) {
+    thread.innerHTML = `<div class="empty" style="padding:24px"><div class="icon">💬</div>
+      <div class="title">No messages yet</div>
+      <p>Send a message and Keri will respond here.</p></div>`;
+    return;
+  }
+  thread.innerHTML = msgs.map(m => {
+    const side = m.sender === 'bon' ? 'bon' : 'contractor';
+    const who = m.sender === 'bon' ? 'Keri · BON' : currentContractor.name;
+    const time = new Date(m.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    return `<div class="msg-bubble msg-${side}">
+      ${m.message}
+      <div class="msg-meta">${who} · ${time}</div>
+    </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = document.getElementById('msgText').value.trim();
+  if (!text) return;
+  const { error } = await db.from('portal_messages').insert({
+    contractor_id: currentContractor.id,
+    sender: 'contractor',
+    message: text,
+    is_read: false
+  });
+  if (!error) {
+    document.getElementById('msgText').value = '';
+    await loadMessages();
+  }
+}
+
+async function checkUnread() {
+  const { data } = await db.from('portal_messages')
+    .select('id').eq('contractor_id', currentContractor.id)
+    .eq('sender','bon').eq('is_read',false);
+  if (data && data.length > 0) {
+    document.getElementById('unreadBadge').classList.remove('hidden');
+  }
+}
+
+async function markMessagesRead() {
+  await db.from('portal_messages')
+    .update({is_read:true})
+    .eq('contractor_id', currentContractor.id)
+    .eq('sender','bon');
+  document.getElementById('unreadBadge').classList.add('hidden');
+}
+
+// ── SUBMIT CLAIM ──
+async function submitClaim() {
+  const address = document.getElementById('sf_address').value.trim();
+  const homeowner = document.getElementById('sf_homeowner').value.trim();
+  const carrier = document.getElementById('sf_carrier').value.trim();
+  const alertEl = document.getElementById('submitAlert');
+
+  if (!address || !homeowner || !carrier) {
+    alertEl.textContent = 'Please fill in property address, homeowner name, and carrier.';
+    alertEl.className = 'alert alert-error';
+    alertEl.classList.remove('hidden');
+    return;
+  }
+
+  // Create claim
+  const claimData = {
+    contractor_id: currentContractor.id,
+    property_address: address,
+    homeowner_name: homeowner,
+    carrier,
+    claim_number: document.getElementById('sf_claim_num').value.trim() || null,
+    adjuster_name: document.getElementById('sf_adjuster_name').value.trim() || null,
+    adjuster_contact: document.getElementById('sf_adjuster_contact').value.trim() || null,
+    date_of_loss: document.getElementById('sf_dol').value || null,
+    notes: document.getElementById('sf_notes').value.trim() || 'EMPTY'
+  };
+
+  const { data: claim, error: claimErr } = await db.from('claims').insert(claimData).select().single();
+  if (claimErr) {
+    alertEl.textContent = 'Error submitting claim. Please try again or email us directly.';
+    alertEl.className = 'alert alert-error';
+    alertEl.classList.remove('hidden');
+    return;
+  }
+
+  // Create supplement at Intake stage
+  await db.from('supplements').insert({
+    claim_id: claim.id,
+    stage: 'Intake',
+    intake_date: new Date().toISOString().slice(0,10),
+    complexity: document.getElementById('sf_complexity').value || null,
+    notes: 'EMPTY'
+  });
+
+  // Upload docs to claim-docs bucket
+  const fileInput = document.getElementById('sf_files');
+  const files = fileInput.files;
+  const uploadPaths = [];
+  if (files && files.length > 0) {
+    for (const file of files) {
+      const path = `${claim.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: upErr } = await db.storage.from('claim-docs').upload(path, file, {upsert: true});
+      if (!upErr) uploadPaths.push(path);
+    }
+  }
+
+  // Auto-message to confirm
+  await db.from('portal_messages').insert({
+    contractor_id: currentContractor.id,
+    sender: 'bon',
+    message: `Got it! New claim received for ${address} — ${homeowner} · ${carrier}. ${uploadPaths.length > 0 ? 'Your docs landed — ' + uploadPaths.length + ' file(s) uploaded.' : 'Remember to send the carrier estimate, measurements, and photo report to supplements@businessofficenetwork.com.'} You\'ll see progress in your queue as we work through it.`,
+    is_read: false
+  });
+
+  alertEl.textContent = '✓ Claim submitted! Check your queue and send your docs to supplements@businessofficenetwork.com.';
+  alertEl.className = 'alert alert-success';
+  alertEl.classList.remove('hidden');
+  clearForm();
+  await loadQueue();
+  await checkUnread();
+  window.scrollTo(0,0);
+}
+
+document.getElementById('sf_files').addEventListener('change', function() {
+  const names = [...this.files].map(f => '✓ ' + f.name).join('<br>');
+  document.getElementById('sf_file_list').innerHTML = names;
+});
+
+function clearForm() {
+  ['sf_address','sf_homeowner','sf_carrier','sf_claim_num','sf_adjuster_name','sf_adjuster_contact','sf_dol','sf_notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sf_complexity').value = '';
+  document.getElementById('sf_files').value = '';
+  document.getElementById('sf_file_list').innerHTML = '';
+}
+
+// ── DOWNLOAD DOC ──
+async function downloadDoc(path, filename) {
+  const { data, error } = await db.storage.from('claim-docs').download(path);
+  if (error || !data) { alert('Could not download file.'); return; }
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none' &&
+      !document.getElementById('loginScreen').classList.contains('hidden')) doLogin();
+});
+</script>
+</body>
+</html>
