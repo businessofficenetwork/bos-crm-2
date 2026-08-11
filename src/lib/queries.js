@@ -347,6 +347,42 @@ export async function listSupplementActivity(supplementId) {
   return data
 }
 
+export async function listAudits() {
+  const { data, error } = await supabase
+    .from('audits')
+    .select(
+      '*, claim:claims(id, property_address, claim_number, carrier, contractor:contractors(name))'
+    )
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function uploadAuditPdf(claimId, file) {
+  const path = `${claimId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+  const { error } = await supabase.storage.from('claim-docs').upload(path, file)
+  if (error) throw error
+  return path
+}
+
+export async function createAudit(audit) {
+  const { data, error } = await supabase.from('audits').insert(audit).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function runAudit(auditId) {
+  const res = await fetch('/.netlify/functions/audit-run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audit_id: auditId }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Audit run failed')
+  return data
+}
+
 export async function createSupplementActivity(entry) {
   const { data, error } = await supabase
     .from('supplement_activity')
