@@ -1,0 +1,66 @@
+:root {
+  --audit-queued: #5a6472;
+  --audit-parsing: #3a7fd5;
+  --audit-analyzing: #e8a020;
+  --audit-manual_review: #c0392b;
+  --audit-findings_ready: #4a9c6d;
+  --audit-failed: #7a1f1f;
+}
+
+.kanban-column-header.audit-status-queued {
+  border-color: var(--audit-queued);
+}
+.kanban-column-header.audit-status-parsing {
+  border-color: var(--audit-parsing);
+}
+.kanban-column-header.audit-status-analyzing {
+  border-color: var(--audit-analyzing);
+}
+.kanban-column-header.audit-status-manual_review {
+  border-color: var(--audit-manual_review);
+}
+.kanban-column-header.audit-status-findings_ready {
+  border-color: var(--audit-findings_ready);
+}
+.kanban-column-header.audit-status-failed {
+  border-color: var(--audit-failed);
+}
+
+.kanban-card.audit-status-queued {
+  border-color: var(--audit-queued);
+}
+.kanban-card.audit-status-parsing {
+  border-color: var(--audit-parsing);
+}
+.kanban-card.audit-status-analyzing {
+  border-color: var(--audit-analyzing);
+}
+.kanban-card.audit-status-manual_review {
+  border-color: var(--audit-manual_review);
+}
+.kanban-card.audit-status-findings_ready {
+  border-color: var(--audit-findings_ready);
+}
+.kanban-card.audit-status-failed {
+  border-color: var(--audit-failed);
+}
+
+.audit-card-error {
+  color: var(--red);
+  font-size: 0.8rem;
+}
+
+.audit-run-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.audit-line-items {
+  margin-top: 1rem;
+}
+
+.audit-table-wrap {
+  overflow-x: auto;
+}
