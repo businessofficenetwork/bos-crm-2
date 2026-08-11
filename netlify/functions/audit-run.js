@@ -46,6 +46,20 @@ async function loadPdfParse() {
 // page rendering needs a more complete canvas polyfill than the stub
 // above; see the note in that file.
 
+// pdf-parse's internal cleanup occasionally throws
+// "The argument 'filename' must be a file URL object..." from its own
+// worker-teardown code (a bundling/Node-version-specific pdf.js quirk,
+// not something this app controls) — the parse result itself is
+// already complete by the time destroy() runs, so a cleanup failure
+// here must never take down an otherwise-successful response.
+async function safeDestroy(parser) {
+  try {
+    await parser.destroy()
+  } catch (err) {
+    console.warn('pdf-parse cleanup (destroy) failed, ignoring:', err.message || err)
+  }
+}
+
 async function setAuditStatus(supabase, auditId, updates) {
   const { error } = await supabase
     .from('audits')
@@ -111,7 +125,7 @@ export const handler = async function (event) {
       const check = reconcile(textResult.text, items)
 
       if (items.length === 0) {
-        await parser.destroy()
+        await safeDestroy(parser)
         await setAuditStatus(supabase, auditId, {
           status: 'manual_review',
           error_detail: 'Text extracted cleanly, but no line items could be parsed from it.',
@@ -120,7 +134,7 @@ export const handler = async function (event) {
       }
 
       if (!check.ok) {
-        await parser.destroy()
+        await safeDestroy(parser)
         await setAuditStatus(supabase, auditId, {
           status: 'manual_review',
           error_detail: `Parsed line items failed reconciliation: ${check.reason}`,
@@ -128,7 +142,7 @@ export const handler = async function (event) {
         return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
       }
 
-      await parser.destroy()
+      await safeDestroy(parser)
       await setAuditStatus(supabase, auditId, {
         status: 'analyzing',
         error_detail: null,
@@ -142,7 +156,7 @@ export const handler = async function (event) {
     // been configured; otherwise flag for manual entry rather than
     // risk bad financial data.
     if (!process.env.ANTHROPIC_API_KEY) {
-      await parser.destroy()
+      await safeDestroy(parser)
       await setAuditStatus(supabase, auditId, {
         status: 'manual_review',
         error_detail: `PDF text was ${quality} (unreadable). Set ANTHROPIC_API_KEY to enable automatic AI-powered parsing, or enter this estimate's line items manually.`,
@@ -150,9 +164,26 @@ export const handler = async function (event) {
       return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
     }
 
-    const { parseWithVision } = await import('./lib/visionParse.js')
-    const items = await parseWithVision(parser)
-    await parser.destroy()
+    // Vision parsing renders PDF pages to images, which depends on
+    // pdf.js's Node canvas factory — a much less battle-tested code
+    // path than plain text extraction, and one that can fail for
+    // environment reasons (missing native canvas bindings, etc.)
+    // unrelated to whether the document itself is readable. A failure
+    // here must degrade to manual_review like every other unreadable
+    // case, never crash the request.
+    let items
+    try {
+      const { parseWithVision } = await import('./lib/visionParse.js')
+      items = await parseWithVision(parser)
+    } catch (visionErr) {
+      await safeDestroy(parser)
+      await setAuditStatus(supabase, auditId, {
+        status: 'manual_review',
+        error_detail: `AI vision parsing failed: ${visionErr.message || visionErr}`,
+      })
+      return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
+    }
+    await safeDestroy(parser)
 
     if (!items || items.length === 0) {
       await setAuditStatus(supabase, auditId, {
