@@ -38,18 +38,22 @@ function daysAgo(days, todayISO) {
 export async function runSupplementFollowups(supabase) {
   const today = new Date().toISOString().slice(0, 10)
 
+  // Every supplement, not just open ones - an action needs to be
+  // auto-cleared below even after its supplement moves to Paid/Closed
+  // or otherwise stops matching the rule that created it.
   const { data: supplements, error } = await supabase
     .from('supplements')
     .select('id, stage, submitted_date, carrier_response_date, invoiced_date')
-    .not('stage', 'in', '(Paid,Closed)')
   if (error) throw error
+  const supplementsById = new Map((supplements || []).map((s) => [s.id, s]))
 
   const { data: openActions } = await supabase
     .from('actions')
-    .select('supplement_id, description')
+    .select('id, supplement_id, description')
     .eq('completed', false)
 
   const created = []
+  const cleared = []
 
   for (const s of supplements || []) {
     for (const rule of RULES) {
@@ -69,5 +73,22 @@ export async function runSupplementFollowups(supabase) {
     }
   }
 
-  return { created }
+  // Auto-clear: an open action we generated whose rule no longer
+  // matches (supplement moved on, or was deleted) doesn't need her to
+  // manually close it out.
+  for (const action of openActions || []) {
+    const rule = RULES.find((r) => action.description.startsWith(r.tag + ':'))
+    if (!rule) continue // not one of ours - never touch manually-created actions
+    const supplement = supplementsById.get(action.supplement_id)
+    if (supplement && rule.matches(supplement, today)) continue
+
+    const { error: updateError } = await supabase
+      .from('actions')
+      .update({ completed: true })
+      .eq('id', action.id)
+    if (updateError) throw updateError
+    cleared.push({ supplement_id: action.supplement_id, rule: rule.tag })
+  }
+
+  return { created, cleared }
 }
