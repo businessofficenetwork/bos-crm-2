@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NotificationDropdown from './NotificationDropdown'
+import PortalNotifications from './PortalNotifications'
 import { listOverdueActions, listMentions, markCommentRead } from '../lib/queries'
 
 function Topbar() {
@@ -36,6 +37,7 @@ function Topbar() {
 
   return (
     <div className="topbar">
+      <PortalNotifications />
       <NotificationDropdown
         icon="🔔"
         label="Reminders"

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BON Portal Admin</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --navy:#1F3A5F;--navy-deep:#16293F;--steel:#3E5C76;--gold:#B08D2E;--gold-bright:#C9A43C;
@@ -125,6 +124,28 @@ tr:last-child td{border-bottom:none}
 </head>
 <body>
 
+<!-- ── ADMIN LOGIN SCREEN ── -->
+<div id="adminLoginScreen">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(175deg,var(--navy) 0%,var(--navy-deep) 100%)">
+    <div style="background:#fff;width:100%;max-width:380px;overflow:hidden">
+      <div style="background:var(--navy-deep);padding:24px 24px 18px;color:#fff">
+        <div style="font-size:24px;font-weight:700;letter-spacing:.05em">B<span style="color:var(--gold-bright)">O</span>N <span style="font-size:14px;font-weight:500;color:#93A6BA">PORTAL ADMIN</span></div>
+      </div>
+      <div style="padding:24px">
+        <div id="adminLoginError" class="hidden alert alert-error"></div>
+        <div class="field" style="margin-bottom:16px">
+          <label>Admin Password</label>
+          <input type="password" id="adminPass" placeholder="••••••••" style="padding:10px 12px;border:1.5px solid var(--line);width:100%;font-family:inherit;font-size:15px">
+        </div>
+        <button class="btn-gold" style="width:100%;padding:12px" onclick="doAdminLogin()">Sign in</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ── -->
+<div id="adminApp" class="hidden">
+
 <div class="topbar">
   <div class="logo">B<span>O</span>N <span style="font-size:14px;font-weight:500;color:#93A6BA;letter-spacing:.06em">PORTAL ADMIN</span></div>
   <div class="topbar-right">
@@ -157,6 +178,8 @@ tr:last-child td{border-bottom:none}
 
 </div>
 
+</div><!-- /adminApp -->
+
 <!-- CREATE LOGIN MODAL -->
 <div id="createModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center">
   <div style="background:#fff;width:100%;max-width:520px;padding:28px">
@@ -165,8 +188,6 @@ tr:last-child td{border-bottom:none}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
       <div class="field"><label>Contractor</label>
         <select id="m_contractor"></select></div>
-      <div class="field"><label>Display Name</label>
-        <input type="text" id="m_display" placeholder="Crown Exteriors"></div>
       <div class="field"><label>Username</label>
         <input type="text" id="m_username" placeholder="crownexteriors"></div>
       <div class="field"><label>Password</label>
@@ -181,30 +202,68 @@ tr:last-child td{border-bottom:none}
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL = 'https://ezfrtcbmyifevyepgoym.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6ZnJ0Y2JteWlmZXZ5ZXBnb3ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5ODc1MDksImV4cCI6MjA5OTU2MzUwOX0.ijDR9I9tL5kctgV7CwQSdoFdr6JlPNuWR7YKIIq124Y';
+// No Supabase client here at all — the admin panel never talks to
+// the database directly. Every action goes through
+// portal-admin-api.js, verified by the admin session token, using a
+// secret key that never reaches this page.
 const PORTAL_URL = 'https://businessofficenetwork.netlify.app/portal.html'; // update after deploy
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function callApi(fn, body) {
+  const res = await fetch(`/.netlify/functions/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
 
+let adminToken = null;
 let contractors = [];
 let selectedContractor = null;
 let portalUsers = [];
 
+// ── ADMIN LOGIN ──
+async function doAdminLogin() {
+  const password = document.getElementById('adminPass').value;
+  const errEl = document.getElementById('adminLoginError');
+  errEl.classList.add('hidden');
+  if (!password) { showAdminLoginError('Please enter the admin password.'); return; }
+
+  let result;
+  try {
+    result = await callApi('portal-admin-login', { password });
+  } catch (e) {
+    showAdminLoginError('Incorrect password.');
+    return;
+  }
+  adminToken = result.token;
+  sessionStorage.setItem('bon_admin_token', adminToken);
+  document.getElementById('adminLoginScreen').classList.add('hidden');
+  document.getElementById('adminApp').classList.remove('hidden');
+  init();
+}
+
+function showAdminLoginError(msg) {
+  const e = document.getElementById('adminLoginError');
+  e.textContent = msg;
+  e.classList.remove('hidden');
+}
+
+document.getElementById('adminPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doAdminLogin();
+});
+
 // ── INIT ──
 async function init() {
-  const [{ data: ctrs }, { data: pu }, { data: msgs }] = await Promise.all([
-    db.from('contractors').select('*').order('name'),
-    db.from('portal_users').select('*'),
-    db.from('portal_messages').select('id,contractor_id,is_read').eq('sender','contractor').eq('is_read',false)
-  ]);
+  const { contractors: ctrs, portalUsers: pu, unreadByContractor } = await callApi('portal-admin-api', {
+    action: 'overview', token: adminToken,
+  });
   contractors = ctrs || [];
   portalUsers = pu || [];
-  const unreadByContractor = {};
-  (msgs || []).forEach(m => { unreadByContractor[m.contractor_id] = (unreadByContractor[m.contractor_id]||0)+1; });
 
-  const totalUnread = (msgs||[]).length;
+  const totalUnread = Object.values(unreadByContractor || {}).reduce((a, b) => a + b, 0);
   if (totalUnread > 0) {
     const pill = document.getElementById('globalUnread');
     pill.textContent = totalUnread + ' unread';
@@ -212,6 +271,7 @@ async function init() {
   }
 
   const contractorSelect = document.getElementById('m_contractor');
+  contractorSelect.innerHTML = '';
   contractors.forEach(c => {
     const o = document.createElement('option');
     o.value = c.id; o.textContent = c.name;
@@ -260,11 +320,8 @@ async function renderContractorPanel() {
     </div>
     ${pu ? `<div class="portal-link-card">
       <div class="portal-link-text">
-        <div class="t">Portal credentials for ${c.name}</div>
-        <div class="d">Username: <strong>${pu.username}</strong> · Password: <strong>${pu.portal_password}</strong> · Last login: ${pu.last_login ? new Date(pu.last_login).toLocaleDateString() : 'Never'}</div>
-      </div>
-      <div class="portal-link-actions">
-        <button class="btn-copy" onclick="copyCredentials('${pu.username}','${pu.portal_password}')">Copy credentials</button>
+        <div class="t">Portal login for ${c.name}</div>
+        <div class="d">Username: <strong>${pu.username}</strong> · Last login: ${pu.last_login ? new Date(pu.last_login).toLocaleDateString() : 'Never'}</div>
       </div>
     </div>` : `<div style="background:var(--light);padding:16px;margin-bottom:20px;font-size:14px;color:var(--grey)">
       No portal login yet — click "Create login" to set one up.
@@ -290,14 +347,14 @@ function showSubTab(name, btn) {
 
 // ── CLAIMS TAB ──
 async function loadClaimsTab() {
-  const { data: claims } = await db.from('claims').select('*').eq('contractor_id', selectedContractor.id);
+  const { claims, supplements: supps } = await callApi('portal-admin-api', {
+    action: 'contractorClaims', token: adminToken, contractorId: selectedContractor.id,
+  });
   if (!claims || !claims.length) {
     document.getElementById('subContent').innerHTML = `<div class="empty"><div class="icon">📋</div>No claims yet.</div>`;
     updateStats([], []);
     return;
   }
-  const claimIds = claims.map(c => c.id);
-  const { data: supps } = await db.from('supplements').select('*').in('claim_id', claimIds).order('created_at',{ascending:false});
   updateStats(claims, supps || []);
   const claimMap = {};
   claims.forEach(c => claimMap[c.id] = c);
@@ -343,28 +400,22 @@ function updateStats(claims, supps) {
 }
 
 async function updateStage(suppId, stage) {
-  const { error } = await db.from('supplements').update({ stage, updated_at: new Date().toISOString() }).eq('id', suppId);
-  if (!error) {
-    // notify contractor via portal message
-    await db.from('portal_messages').insert({
-      contractor_id: selectedContractor.id,
-      sender: 'bon',
-      message: `Update: your supplement has moved to "${stage}".`,
-      is_read: false
+  try {
+    await callApi('portal-admin-api', {
+      action: 'updateStage', token: adminToken, supplementId: suppId, stage, contractorId: selectedContractor.id,
     });
     showAlert('Stage updated and contractor notified.', true);
+  } catch (e) {
+    showAlert('Could not update stage.', false);
   }
 }
 
 // ── MESSAGES TAB ──
 async function loadMessagesTab() {
-  const { data: msgs } = await db.from('portal_messages')
-    .select('*').eq('contractor_id', selectedContractor.id)
-    .order('created_at', {ascending:true});
+  const { messages: msgs } = await callApi('portal-admin-api', {
+    action: 'contractorMessages', token: adminToken, contractorId: selectedContractor.id,
+  });
 
-  // Mark contractor messages as read
-  await db.from('portal_messages').update({is_read:true})
-    .eq('contractor_id',selectedContractor.id).eq('sender','contractor');
   const dot = document.querySelector(`#crow_${selectedContractor.id} .unread-dot`);
   if (dot) dot.remove();
 
@@ -394,27 +445,24 @@ async function loadMessagesTab() {
 async function sendReply() {
   const text = document.getElementById('replyText').value.trim();
   if (!text) return;
-  const { error } = await db.from('portal_messages').insert({
-    contractor_id: selectedContractor.id,
-    sender: 'bon',
-    message: text,
-    is_read: false
-  });
-  if (!error) await loadMessagesTab();
+  try {
+    await callApi('portal-admin-api', { action: 'sendReply', token: adminToken, contractorId: selectedContractor.id, message: text });
+    await loadMessagesTab();
+  } catch (e) {
+    showAlert('Could not send message.', false);
+  }
 }
 
 // ── DOCS TAB ──
 async function loadDocsTab() {
-  const { data: claims } = await db.from('claims').select('id,property_address').eq('contractor_id', selectedContractor.id);
-  if (!claims || !claims.length) {
-    document.getElementById('subContent').innerHTML = `<div class="empty"><div class="icon">📁</div>No claims yet.</div>`;
+  const { claimDocs } = await callApi('portal-admin-api', {
+    action: 'contractorDocs', token: adminToken, contractorId: selectedContractor.id,
+  });
+  if (!claimDocs || !claimDocs.length) {
+    document.getElementById('subContent').innerHTML = `<div class="empty"><div class="icon">📁</div>No documents uploaded yet.</div>`;
     return;
   }
-  let html = '';
-  for (const claim of claims) {
-    const { data: files } = await db.storage.from('claim-docs').list(claim.id, {limit:50});
-    if (!files || !files.length) continue;
-    html += `<div style="margin-bottom:22px">
+  const html = claimDocs.map(({ claim, files }) => `<div style="margin-bottom:22px">
       <div style="font-weight:700;font-size:14px;color:var(--navy);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">${claim.property_address||'Claim '+(claim.id.slice(0,8))}</div>
       ${files.map(f => {
         const path = `${claim.id}/${f.name}`;
@@ -424,59 +472,57 @@ async function loadDocsTab() {
           <button class="link-btn" onclick="downloadDoc('${path}','${f.name}')">Download</button>
         </div>`;
       }).join('')}
-    </div>`;
-  }
-  document.getElementById('subContent').innerHTML = html || `<div class="empty"><div class="icon">📁</div>No documents uploaded yet.</div>`;
+    </div>`).join('');
+  document.getElementById('subContent').innerHTML = html;
 }
 
 async function downloadDoc(path, filename) {
-  const { data, error } = await db.storage.from('claim-docs').download(path);
-  if (error || !data) { alert('Could not download file.'); return; }
-  const url = URL.createObjectURL(data);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    const { url } = await callApi('portal-admin-api', { action: 'downloadUrl', token: adminToken, path });
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.target = '_blank';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+  } catch (e) {
+    alert('Could not download file.');
+  }
 }
 
 // ── CREATE LOGIN ──
 function showCreateLogin(contractorId) {
   document.getElementById('createModal').classList.remove('hidden');
   document.getElementById('createAlert').classList.add('hidden');
-  if (contractorId) document.getElementById('m_contractor').value = contractorId;
+  document.getElementById('m_username').value = '';
+  document.getElementById('m_password').value = '';
+  if (contractorId) {
+    document.getElementById('m_contractor').value = contractorId;
+    const existing = portalUsers.find(p => p.contractor_id === contractorId);
+    if (existing) document.getElementById('m_username').value = existing.username;
+  }
 }
 function closeModal() { document.getElementById('createModal').classList.add('hidden'); }
 
 async function createLogin() {
-  const contractor_id = document.getElementById('m_contractor').value;
+  const contractorId = document.getElementById('m_contractor').value;
   const username = document.getElementById('m_username').value.trim().toLowerCase().replace(/\s+/g,'');
-  const portal_password = document.getElementById('m_password').value.trim();
-  const display_name = document.getElementById('m_display').value.trim();
+  const password = document.getElementById('m_password').value.trim();
   const alertEl = document.getElementById('createAlert');
-  if (!username || !portal_password) {
+  if (!username || !password) {
     alertEl.textContent = 'Username and password are required.';
     alertEl.className = 'alert alert-error'; alertEl.classList.remove('hidden');
     return;
   }
-  const { error } = await db.from('portal_users').upsert({
-    contractor_id, username, portal_password, display_name, is_active: true
-  }, { onConflict: 'username' });
-  if (error) {
-    alertEl.textContent = 'Error: ' + error.message;
+  try {
+    await callApi('portal-admin-api', { action: 'createLogin', token: adminToken, contractorId, username, password });
+  } catch (e) {
+    alertEl.textContent = 'Error: ' + e.message;
     alertEl.className = 'alert alert-error'; alertEl.classList.remove('hidden');
     return;
   }
   closeModal();
-  showAlert('Portal login created for ' + (display_name || username), true);
+  showAlert(`Portal login saved — username: ${username}, password: ${password}. Share these with the contractor now; they won't be shown again.`, true);
   await init();
   if (selectedContractor) renderContractorPanel();
-}
-
-// ── HELPERS ──
-function copyCredentials(username, password) {
-  const text = `BON Portal: ${PORTAL_URL}\nUsername: ${username}\nPassword: ${password}`;
-  navigator.clipboard.writeText(text).then(() => showAlert('Credentials copied to clipboard!', true));
 }
 
 function showAlert(msg, success) {
@@ -499,17 +545,14 @@ function stageBadgeAdmin(stage) {
 
 // ── AUTO REFRESH ──
 setInterval(async () => {
-  if (!selectedContractor) return;
-  const { data } = await db.from('portal_messages')
-    .select('id').eq('contractor_id',selectedContractor.id)
-    .eq('sender','contractor').eq('is_read',false);
-  if (data && data.length > 0) {
-    document.getElementById('globalUnread').textContent = data.length + ' unread';
+  if (!adminToken) return;
+  const { unreadByContractor } = await callApi('portal-admin-api', { action: 'overview', token: adminToken });
+  const total = Object.values(unreadByContractor || {}).reduce((a, b) => a + b, 0);
+  if (total > 0) {
+    document.getElementById('globalUnread').textContent = total + ' unread';
     document.getElementById('globalUnread').classList.remove('hidden');
   }
 }, 30000); // check every 30 seconds
-
-init();
 </script>
 </body>
 </html>
