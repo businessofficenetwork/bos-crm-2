@@ -64,3 +64,38 @@
 .audit-table-wrap {
   overflow-x: auto;
 }
+
+.finding-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+.finding-pending {
+  color: var(--light-dim);
+}
+.finding-accepted {
+  color: var(--green);
+}
+.finding-rejected {
+  color: var(--red);
+}
+
+.finding-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+.finding-actions button {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.audit-review {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--dark4);
+}
+.audit-review .form-actions {
+  align-items: center;
+}

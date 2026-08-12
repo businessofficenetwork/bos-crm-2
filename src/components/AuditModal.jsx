@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { AUDIT_STATUS_LABELS } from '../lib/auditStages'
-import { uploadAuditPdf, uploadAuditPhotos, createAudit, runAudit } from '../lib/queries'
+import {
+  uploadAuditPdf,
+  uploadAuditPhotos,
+  createAudit,
+  runAudit,
+  updateAuditFindings,
+  markAuditReviewed,
+} from '../lib/queries'
 
 function money(value) {
   return value === null || value === undefined ? '—' : `$${Number(value).toLocaleString()}`
@@ -21,6 +28,42 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   const [photoFiles, setPhotoFiles] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [findings, setFindings] = useState(audit?.findings || [])
+  const [savingFinding, setSavingFinding] = useState(null)
+  const [reviewedBy, setReviewedBy] = useState(audit?.reviewed_by || null)
+  const [reviewerName, setReviewerName] = useState('')
+
+  async function setFindingStatus(index, status) {
+    const updated = findings.map((f, i) => (i === index ? { ...f, review_status: status } : f))
+    setFindings(updated)
+    setSavingFinding(index)
+    setError(null)
+    try {
+      await updateAuditFindings(audit.id, updated)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSavingFinding(null)
+    }
+  }
+
+  async function handleMarkReviewed() {
+    const name = reviewerName.trim()
+    if (!name) {
+      setError('Enter your name to mark this reviewed.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      await markAuditReviewed(audit.id, name)
+      setReviewedBy(name)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -153,7 +196,7 @@ function AuditModal({ audit, claims, onClose, onDone }) {
             {error && <p className="form-error">{error}</p>}
             {audit.error_detail && <p className="form-error">{audit.error_detail}</p>}
 
-            {audit.findings?.length > 0 && (
+            {findings.length > 0 && (
               <div className="audit-line-items">
                 <h3>Findings</h3>
                 <div className="audit-table-wrap">
@@ -165,20 +208,63 @@ function AuditModal({ audit, claims, onClose, onDone }) {
                         <th>Est. Value</th>
                         <th>Confidence</th>
                         <th>Rationale</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {audit.findings.map((f, i) => (
-                        <tr key={i}>
-                          <td>{f.shortfall_type || f.rule_id}</td>
-                          <td>{f.line_item}</td>
-                          <td>{money(f.est_value)}</td>
-                          <td>{f.confidence}</td>
-                          <td>{f.rationale}</td>
-                        </tr>
-                      ))}
+                      {findings.map((f, i) => {
+                        const status = f.review_status || 'pending'
+                        return (
+                          <tr key={i}>
+                            <td>{f.shortfall_type || f.rule_id}</td>
+                            <td>{f.line_item}</td>
+                            <td>{money(f.est_value)}</td>
+                            <td>{f.confidence}</td>
+                            <td>{f.rationale}</td>
+                            <td>
+                              <div className={`finding-status finding-${status}`}>{status}</div>
+                              <div className="finding-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => setFindingStatus(i, 'accepted')}
+                                  disabled={savingFinding === i || status === 'accepted'}
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFindingStatus(i, 'rejected')}
+                                  disabled={savingFinding === i || status === 'rejected'}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
+                </div>
+
+                <div className="audit-review">
+                  {reviewedBy ? (
+                    <p>
+                      Reviewed by <strong>{reviewedBy}</strong>
+                    </p>
+                  ) : (
+                    <div className="form-actions">
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        value={reviewerName}
+                        onChange={(e) => setReviewerName(e.target.value)}
+                      />
+                      <button type="button" onClick={handleMarkReviewed} disabled={saving}>
+                        Mark Reviewed
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

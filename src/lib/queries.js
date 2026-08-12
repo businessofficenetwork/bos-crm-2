@@ -402,6 +402,22 @@ export async function runAudit(auditId) {
   if (!res.ok) throw new Error('Audit run failed to start')
 }
 
+// findings is the whole array, rewritten with one entry's review_status
+// changed — jsonb has no per-element update, so the caller sends the
+// full array back. Used by the accept/reject toggles in AuditModal.
+export async function updateAuditFindings(auditId, findings) {
+  const { error } = await supabase.from('audits').update({ findings }).eq('id', auditId)
+  if (error) throw error
+}
+
+export async function markAuditReviewed(auditId, reviewedBy) {
+  const { error } = await supabase
+    .from('audits')
+    .update({ reviewed_by: reviewedBy })
+    .eq('id', auditId)
+  if (error) throw error
+}
+
 export async function createSupplementActivity(entry) {
   const { data, error } = await supabase
     .from('supplement_activity')
