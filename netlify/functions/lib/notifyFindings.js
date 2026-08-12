@@ -21,7 +21,7 @@ export async function notifyFindingsReady({ auditId, address, estTotalRecovery, 
       from: 'BOS CRM <onboarding@resend.dev>',
       to: [to],
       subject,
-      html: `<p>${subject}</p><p><a href="${CRM_ORIGIN}/audits">View in CRM →</a></p>`,
+      html: `<p>${subject}</p><p><a href="${CRM_ORIGIN}/audits?open=${auditId}">View in CRM →</a></p>`,
     }),
   })
 

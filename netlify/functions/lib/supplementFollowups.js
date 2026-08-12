@@ -11,7 +11,7 @@
 const RULES = [
   {
     tag: 'Follow up',
-    description: (s) =>
+    description: () =>
       `Follow up: submission over 7 days with no carrier response — nudge the contractor to check with the adjuster.`,
     matches: (s, todayISO) =>
       s.stage === 'Submitted' && !s.carrier_response_date && s.submitted_date && s.submitted_date < daysAgo(7, todayISO),

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import AuditBoard from '../components/AuditBoard'
 import AuditModal from '../components/AuditModal'
 import { listAudits, listClaims } from '../lib/queries'
@@ -12,6 +13,7 @@ function Audits() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [viewing, setViewing] = useState(null) // null = closed, {} = new, object = existing audit
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const refresh = useCallback(async () => {
     try {
@@ -28,6 +30,16 @@ function Audits() {
     refresh()
     listClaims().then(setClaims).catch((err) => setError(err.message))
   }, [refresh])
+
+  // Lets the findings-ready email link straight to the audit that
+  // triggered it, matching the ?open= pattern Pipeline/Jobs already use.
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || audits.length === 0) return
+    const match = audits.find((a) => a.id === openId)
+    if (match) setViewing(match)
+    setSearchParams({}, { replace: true })
+  }, [audits, searchParams, setSearchParams])
 
   function handleDone() {
     setViewing(null)
