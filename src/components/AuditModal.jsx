@@ -153,6 +153,36 @@ function AuditModal({ audit, claims, onClose, onDone }) {
             {error && <p className="form-error">{error}</p>}
             {audit.error_detail && <p className="form-error">{audit.error_detail}</p>}
 
+            {audit.findings?.length > 0 && (
+              <div className="audit-line-items">
+                <h3>Findings</h3>
+                <div className="audit-table-wrap">
+                  <table className="contractors-table">
+                    <thead>
+                      <tr>
+                        <th>Rule</th>
+                        <th>Line Item</th>
+                        <th>Est. Value</th>
+                        <th>Confidence</th>
+                        <th>Rationale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {audit.findings.map((f, i) => (
+                        <tr key={i}>
+                          <td>{f.shortfall_type || f.rule_id}</td>
+                          <td>{f.line_item}</td>
+                          <td>{money(f.est_value)}</td>
+                          <td>{f.confidence}</td>
+                          <td>{f.rationale}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {audit.parsed_estimate?.line_items?.length > 0 && (
               <div className="audit-line-items">
                 <h3>Parsed Line Items</h3>
