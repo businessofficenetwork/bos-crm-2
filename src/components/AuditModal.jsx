@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AUDIT_STATUS_LABELS } from '../lib/auditStages'
-import { uploadAuditPdf, createAudit, runAudit } from '../lib/queries'
+import { uploadAuditPdf, uploadAuditPhotos, createAudit, runAudit } from '../lib/queries'
 
 function money(value) {
   return value === null || value === undefined ? '—' : `$${Number(value).toLocaleString()}`
@@ -17,6 +17,8 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   const isNew = !audit
   const [claimId, setClaimId] = useState('')
   const [file, setFile] = useState(null)
+  const [measurementFile, setMeasurementFile] = useState(null)
+  const [photoFiles, setPhotoFiles] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -30,7 +32,14 @@ function AuditModal({ audit, claims, onClose, onDone }) {
     setError(null)
     try {
       const path = await uploadAuditPdf(claimId, file)
-      const newAudit = await createAudit({ claim_id: claimId, estimate_pdf_path: path })
+      const measurementPath = measurementFile ? await uploadAuditPdf(claimId, measurementFile) : null
+      const photoPaths = photoFiles.length ? await uploadAuditPhotos(claimId, photoFiles) : null
+      const newAudit = await createAudit({
+        claim_id: claimId,
+        estimate_pdf_path: path,
+        measurement_report_path: measurementPath,
+        photos_paths: photoPaths,
+      })
       await runAudit(newAudit.id)
       onDone()
     } catch (err) {
@@ -79,6 +88,23 @@ function AuditModal({ audit, claims, onClose, onDone }) {
                 accept=".pdf"
                 onChange={(e) => setFile(e.target.files[0] || null)}
                 required
+              />
+            </label>
+            <label>
+              Measurement report (PDF) — optional, enables quantity/waste checks
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setMeasurementFile(e.target.files[0] || null)}
+              />
+            </label>
+            <label>
+              Roof/property photos — optional, enables material verification checks
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png"
+                multiple
+                onChange={(e) => setPhotoFiles([...e.target.files])}
               />
             </label>
             {error && <p className="form-error">{error}</p>}

@@ -366,6 +366,20 @@ export async function uploadAuditPdf(claimId, file) {
   return path
 }
 
+// Same upload as uploadAuditPdf but for however many photo files were
+// selected — used by rules that need roof/property photos (e.g. ridge
+// cap material verification) rather than just the estimate text.
+export async function uploadAuditPhotos(claimId, files) {
+  const paths = []
+  for (const file of files) {
+    const path = `${claimId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const { error } = await supabase.storage.from('claim-docs').upload(path, file)
+    if (error) throw error
+    paths.push(path)
+  }
+  return paths
+}
+
 export async function createAudit(audit) {
   const { data, error } = await supabase.from('audits').insert(audit).select().single()
   if (error) throw error
