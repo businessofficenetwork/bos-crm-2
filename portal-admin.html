@@ -150,7 +150,7 @@ tr:last-child td{border-bottom:none}
   <div class="logo">B<span>O</span>N <span style="font-size:14px;font-weight:500;color:#93A6BA;letter-spacing:.06em">PORTAL ADMIN</span></div>
   <div class="topbar-right">
     <span id="globalUnread" class="unread-pill hidden">0 unread</span>
-    <a href="https://businessofficesystem.netlify.app" target="_blank" class="btn-crm">← Back to CRM</a>
+    <a href="https://boscrm2.netlify.app" target="_blank" class="btn-crm">← Back to CRM</a>
   </div>
 </div>
 
@@ -206,7 +206,7 @@ tr:last-child td{border-bottom:none}
 // the database directly. Every action goes through
 // portal-admin-api.js, verified by the admin session token, using a
 // secret key that never reaches this page.
-const PORTAL_URL = 'https://businessofficenetwork.netlify.app/portal.html'; // update after deploy
+const PORTAL_URL = 'https://boscrm2.netlify.app/portal.html'
 
 async function callApi(fn, body) {
   const res = await fetch(`/.netlify/functions/${fn}`, {

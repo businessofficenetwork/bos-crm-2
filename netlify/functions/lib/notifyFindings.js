@@ -1,7 +1,7 @@
 // Emails Keri when an audit's findings are ready. Raw fetch against
 // Resend's REST API — one email per audit run doesn't need the SDK.
 
-const CRM_ORIGIN = 'https://businessofficesystem.netlify.app'
+const CRM_ORIGIN = 'https://boscrm2.netlify.app'
 
 export async function notifyFindingsReady({ auditId, address, estTotalRecovery, findingsCount }) {
   const apiKey = process.env.RESEND_API_KEY
