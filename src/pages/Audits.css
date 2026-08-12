@@ -50,6 +50,11 @@
   font-size: 0.8rem;
 }
 
+.finding-needs-review {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .audit-run-btn {
   margin-top: 0.5rem;
   width: 100%;

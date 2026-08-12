@@ -50,7 +50,11 @@ function AuditCard({ audit, onClick, onRun }) {
       )}
 
       {audit.status === 'findings_ready' && (
-        <div className="kanban-card-row">{money(audit.est_total_recovery)} est. recovery</div>
+        <div className="kanban-card-row">
+          {money(audit.est_total_recovery)} est. recovery · {audit.findings?.length || 0} finding
+          {audit.findings?.length === 1 ? '' : 's'}
+          {!audit.reviewed_by && <span className="finding-needs-review"> · needs review</span>}
+        </div>
       )}
 
       <button type="button" className="audit-run-btn" onClick={handleRun} disabled={running}>
