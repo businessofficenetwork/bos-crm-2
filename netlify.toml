@@ -12,3 +12,8 @@
 # rather it land at a different time. Weekdays only (Mon-Fri).
 [functions."daily-digest"]
   schedule = "0 13 * * 1-5"
+
+# Runs before the digest each morning so any new follow-up actions it
+# queues show up in that day's digest.
+[functions."supplement-followups"]
+  schedule = "0 12 * * 1-5"
