@@ -80,7 +80,20 @@ function SupplementForm({ claims, initialValues, onSubmit, onCancel }) {
 
   function handleChange(e) {
     const { name, value } = e.target
-    setForm((f) => ({ ...f, [name]: value }))
+    setForm((f) => {
+      const next = { ...f, [name]: value }
+      // Moving to a new stage should fill in that stage's date automatically
+      // rather than making her set both fields separately - but never
+      // overwrite a date that's already there (e.g. correcting an older
+      // record shouldn't silently wipe its real history).
+      if (name === 'stage') {
+        const dateField = DATE_FIELDS.find(([, stage]) => stage === value)?.[0]
+        if (dateField && !next[dateField]) {
+          next[dateField] = new Date().toISOString().slice(0, 10)
+        }
+      }
+      return next
+    })
   }
 
   function handleClosingCheckbox(e) {
