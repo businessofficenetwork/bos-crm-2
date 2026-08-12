@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import LeadForm from '../components/LeadForm'
+import ContractorForm from '../components/ContractorForm'
 import DetailView from '../components/DetailView'
-import { listLeads, createLead, updateLead } from '../lib/queries'
+import { listLeads, createLead, updateLead, createContractor } from '../lib/queries'
 import './Contractors.css'
 
 function truncate(text, max = 60) {
@@ -33,6 +34,7 @@ function Leads() {
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
+  const [converting, setConverting] = useState(null) // null = closed, lead object = converting that lead
 
   async function refresh(term = search) {
     setLoading(true)
@@ -68,6 +70,14 @@ function Leads() {
     await refresh()
   }
 
+  async function handleConvert(form) {
+    await createContractor(form)
+    await updateLead(converting.id, { status: 'converted' })
+    setConverting(null)
+    setViewing(null)
+    await refresh()
+  }
+
   return (
     <div>
       <div className="contractors-header">
@@ -87,15 +97,38 @@ function Leads() {
         onChange={handleSearchChange}
       />
 
-      {viewing && !editing && (
-        <DetailView
-          title={viewing.name}
-          fields={leadFields(viewing)}
-          onEdit={() => {
-            setEditing(viewing)
-            setViewing(null)
+      {viewing && !editing && !converting && (
+        <>
+          <DetailView
+            title={viewing.name}
+            fields={leadFields(viewing)}
+            onEdit={() => {
+              setEditing(viewing)
+              setViewing(null)
+            }}
+            onClose={() => setViewing(null)}
+          />
+          {!['converted', 'dead'].includes(viewing.status) && (
+            <div className="header-actions">
+              <button type="button" onClick={() => setConverting(viewing)}>
+                Convert to Contractor
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {converting && (
+        <ContractorForm
+          initialValues={{
+            name: converting.company || converting.name,
+            contact_name: converting.name,
+            phone: converting.phone,
+            email: converting.email,
+            notes: converting.message,
           }}
-          onClose={() => setViewing(null)}
+          onSubmit={handleConvert}
+          onCancel={() => setConverting(null)}
         />
       )}
 
