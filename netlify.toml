@@ -7,3 +7,8 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# 13:00 UTC = 7am Central (CDT) / 8am Central (CST) - adjust if you'd
+# rather it land at a different time. Weekdays only (Mon-Fri).
+[functions."daily-digest"]
+  schedule = "0 13 * * 1-5"
