@@ -372,15 +372,20 @@ export async function createAudit(audit) {
   return data
 }
 
+// audit-run-background.js is a Netlify background function (name suffix is
+// what triggers that) — it can run up to 15 minutes, well past the ~10-26s
+// limit on regular functions that the AI parsing path (a real OCR + LLM
+// call on scanned PDFs) was timing out against. Netlify responds 202 the
+// instant it's queued, with no result body — callers here don't wait for a
+// parsed result, they trigger and rely on AuditBoard's polling to reflect
+// the eventual status.
 export async function runAudit(auditId) {
-  const res = await fetch('/.netlify/functions/audit-run', {
+  const res = await fetch('/.netlify/functions/audit-run-background', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ audit_id: auditId }),
   })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error || 'Audit run failed')
-  return data
+  if (!res.ok) throw new Error('Audit run failed to start')
 }
 
 export async function createSupplementActivity(entry) {

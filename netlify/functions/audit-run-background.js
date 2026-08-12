@@ -41,10 +41,9 @@ async function loadPdfParse() {
   }
   return PDFParse
 }
-// visionParse.js is imported lazily further below (only reached when a
-// garbled/scanned PDF + ANTHROPIC_API_KEY are both present) — actual
-// page rendering needs a more complete canvas polyfill than the stub
-// above; see the note in that file.
+// aiParse.js is imported lazily further below (only reached when a
+// garbled/scanned PDF + ANTHROPIC_API_KEY are both present) — it sends
+// the PDF straight to Claude as a document, no page rendering needed.
 
 // pdf-parse's internal cleanup occasionally throws
 // "The argument 'filename' must be a file URL object..." from its own
@@ -152,9 +151,9 @@ export const handler = async function (event) {
     }
 
     // quality is 'garbled' or 'empty' — free text parsing can't be
-    // trusted. Only attempt AI-powered vision parsing if a key has
-    // been configured; otherwise flag for manual entry rather than
-    // risk bad financial data.
+    // trusted. Only attempt AI-powered parsing if a key has been
+    // configured; otherwise flag for manual entry rather than risk bad
+    // financial data.
     if (!process.env.ANTHROPIC_API_KEY) {
       await safeDestroy(parser)
       await setAuditStatus(supabase, auditId, {
@@ -164,31 +163,28 @@ export const handler = async function (event) {
       return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
     }
 
-    // Vision parsing renders PDF pages to images, which depends on
-    // pdf.js's Node canvas factory — a much less battle-tested code
-    // path than plain text extraction, and one that can fail for
-    // environment reasons (missing native canvas bindings, etc.)
-    // unrelated to whether the document itself is readable. A failure
-    // here must degrade to manual_review like every other unreadable
-    // case, never crash the request.
+    await safeDestroy(parser)
+
+    // Sends the PDF's own bytes to Claude — no rendering, so a failure
+    // here means a real problem (bad key, oversized file, API error),
+    // not an environment quirk. Still degrades to manual_review rather
+    // than crashing the request, matching every other unreadable case.
     let items
     try {
-      const { parseWithVision } = await import('./lib/visionParse.js')
-      items = await parseWithVision(parser)
-    } catch (visionErr) {
-      await safeDestroy(parser)
+      const { parseWithClaude } = await import('./lib/aiParse.js')
+      items = await parseWithClaude(pdfBuffer)
+    } catch (aiErr) {
       await setAuditStatus(supabase, auditId, {
         status: 'manual_review',
-        error_detail: `AI vision parsing failed: ${visionErr.message || visionErr}`,
+        error_detail: `AI parsing failed: ${aiErr.message || aiErr}`,
       })
       return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
     }
-    await safeDestroy(parser)
 
     if (!items || items.length === 0) {
       await setAuditStatus(supabase, auditId, {
         status: 'manual_review',
-        error_detail: 'AI vision parsing returned no line items.',
+        error_detail: 'AI parsing returned no line items.',
       })
       return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
     }
@@ -196,7 +192,7 @@ export const handler = async function (event) {
     await setAuditStatus(supabase, auditId, {
       status: 'analyzing',
       error_detail: null,
-      parsed_estimate: { line_items: items, source: 'vision' },
+      parsed_estimate: { line_items: items, source: 'ai' },
     })
     return { statusCode: 200, body: JSON.stringify({ status: 'analyzing', item_count: items.length }) }
   } catch (err) {
