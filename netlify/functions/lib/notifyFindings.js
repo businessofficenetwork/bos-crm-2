@@ -18,7 +18,7 @@ export async function notifyFindingsReady({ auditId, address, estTotalRecovery, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'BOS CRM <onboarding@resend.dev>',
+      from: 'BOS CRM <notifications@businessofficenetwork.com>',
       to: [to],
       subject,
       html: `<p>${subject}</p><p><a href="${CRM_ORIGIN}/audits?open=${auditId}">View in CRM →</a></p>`,

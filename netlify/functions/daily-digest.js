@@ -22,7 +22,7 @@ export const handler = async function () {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'BOS CRM <onboarding@resend.dev>',
+      from: 'BOS CRM <notifications@businessofficenetwork.com>',
       to: [to],
       subject: `BOS Daily Digest — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
       text: digestText,

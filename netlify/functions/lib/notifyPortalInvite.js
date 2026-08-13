@@ -19,7 +19,7 @@ export async function notifyPortalInvite({ contractorEmail, contractorName, user
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'BON Client Portal <onboarding@resend.dev>',
+      from: 'BON Client Portal <notifications@businessofficenetwork.com>',
       to: [contractorEmail],
       subject: 'Your BON Client Portal login',
       html: `<p>Hi${contractorName ? ' ' + contractorName : ''},</p>
