@@ -158,6 +158,32 @@ export async function getPipelineSummary() {
   return data
 }
 
+// Fees collected, grouped by the month a supplement was closed out
+// (per Close Out Supplement / closed_date) - most recent month first.
+export async function getMonthlyFeesCollected() {
+  const { data, error } = await supabase
+    .from('supplements')
+    .select('bon_fee, closed_date')
+    .eq('stage', 'Closed')
+    .not('closed_date', 'is', null)
+
+  if (error) throw error
+
+  const byMonth = {}
+  for (const s of data || []) {
+    const month = s.closed_date.slice(0, 7) // 'YYYY-MM'
+    byMonth[month] = (byMonth[month] || 0) + (Number(s.bon_fee) || 0)
+  }
+
+  return Object.entries(byMonth)
+    .sort(([a], [b]) => (a < b ? 1 : -1))
+    .map(([month, total]) => ({
+      month,
+      label: new Date(month + '-02').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      total,
+    }))
+}
+
 // One gathering call for the dashboard's summary cards - counts only,
 // not full row detail, so each card links through to its own page
 // (Contractors/Jobs/Pipeline/Leads/Audits) for the real list.

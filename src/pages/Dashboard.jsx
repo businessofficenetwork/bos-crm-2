@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPipelineSummary, listOverdueActions, getDashboardStats } from '../lib/queries'
+import {
+  getPipelineSummary,
+  listOverdueActions,
+  getDashboardStats,
+  getMonthlyFeesCollected,
+} from '../lib/queries'
 import RemindersPanel from '../components/RemindersPanel'
 import DashboardStats from '../components/DashboardStats'
 import './Contractors.css'
@@ -28,6 +33,7 @@ function Dashboard() {
   const [summary, setSummary] = useState([])
   const [overdue, setOverdue] = useState([])
   const [stats, setStats] = useState(null)
+  const [monthlyFees, setMonthlyFees] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -36,14 +42,16 @@ function Dashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [summaryData, overdueData, statsData] = await Promise.all([
+        const [summaryData, overdueData, statsData, feesData] = await Promise.all([
           getPipelineSummary(),
           listOverdueActions(),
           getDashboardStats(),
+          getMonthlyFeesCollected(),
         ])
         setSummary(summaryData)
         setOverdue(overdueData)
         setStats(statsData)
+        setMonthlyFees(feesData)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -103,6 +111,29 @@ function Dashboard() {
                   <td>{money(row.approved)}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+
+          <h2>Fees Collected by Month</h2>
+          <table className="contractors-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Fees Collected</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthlyFees.map((row) => (
+                <tr key={row.month}>
+                  <td>{row.label}</td>
+                  <td>{money(row.total)}</td>
+                </tr>
+              ))}
+              {monthlyFees.length === 0 && (
+                <tr>
+                  <td colSpan={2}>No supplements closed out yet.</td>
+                </tr>
+              )}
             </tbody>
           </table>
 
