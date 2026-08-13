@@ -32,6 +32,7 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   const [savingFinding, setSavingFinding] = useState(null)
   const [reviewedBy, setReviewedBy] = useState(audit?.reviewed_by || null)
   const [reviewerName, setReviewerName] = useState('')
+  const [fullscreen, setFullscreen] = useState(false)
 
   async function setFindingStatus(index, status) {
     const updated = findings.map((f, i) => (i === index ? { ...f, review_status: status } : f))
@@ -106,8 +107,14 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`modal-overlay ${fullscreen ? 'modal-overlay-fullscreen' : ''}`}
+      onClick={onClose}
+    >
+      <div
+        className={`modal-window ${!isNew ? 'modal-window-wide' : ''} ${fullscreen ? 'modal-window-fullscreen' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {isNew ? (
           <form className="supplement-form" onSubmit={handleCreate}>
             <h3>New Audit</h3>
@@ -165,6 +172,13 @@ function AuditModal({ audit, claims, onClose, onDone }) {
             <div className="detail-header">
               <h3>{audit.claim?.property_address || audit.claim?.claim_number || 'Audit'}</h3>
               <div className="form-actions">
+                <button
+                  type="button"
+                  className="fullscreen-toggle-btn"
+                  onClick={() => setFullscreen((f) => !f)}
+                >
+                  {fullscreen ? '⤡ Exit Fullscreen' : '⤢ Fullscreen'}
+                </button>
                 <button type="button" onClick={handleRunAgain} disabled={saving}>
                   {saving ? 'Running…' : 'Run again'}
                 </button>

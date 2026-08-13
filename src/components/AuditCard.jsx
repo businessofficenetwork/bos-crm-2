@@ -53,7 +53,7 @@ function AuditCard({ audit, onClick, onRun }) {
         <div className="kanban-card-row">
           {money(audit.est_total_recovery)} est. recovery · {audit.findings?.length || 0} finding
           {audit.findings?.length === 1 ? '' : 's'}
-          {!audit.reviewed_by && <span className="finding-needs-review"> · needs review</span>}
+          {!audit.reviewed_by && <span className="finding-pending-signoff"> · pending sign-off</span>}
         </div>
       )}
 
