@@ -157,6 +157,13 @@
   gap: 0.4rem;
 }
 
+.actions-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .actions-list .completed label {
   text-decoration: line-through;
   color: var(--light-dim);

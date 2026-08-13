@@ -13,6 +13,26 @@ import {
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
 
+function money(value) {
+  return value === null || value === undefined ? '' : `$${Number(value).toLocaleString()}`
+}
+
+// "Largest number on the estimate" - for a free-parsed audit that's
+// the document's own stated total (reconciled_total, cross-checked
+// against the PDF's own RCV line in parseEstimate.js); an AI-parsed
+// audit has no single stated total, so it's the sum of line items'
+// RCV instead. A claim can have more than one audit (original,
+// revised) - takes the largest across all of them.
+function estimateValue(claim) {
+  const values = (claim.audits || []).map((a) => {
+    const est = a.parsed_estimate
+    if (!est) return 0
+    if (est.reconciled_total) return Number(est.reconciled_total) || 0
+    return (est.line_items || []).reduce((sum, item) => sum + (Number(item.rcv) || 0), 0)
+  })
+  return values.length ? Math.max(...values) : null
+}
+
 function claimFields(c) {
   return [
     { label: 'Contractor', value: c.contractor?.name },
@@ -37,6 +57,7 @@ const CSV_COLUMNS = [
   { key: 'adjuster_name', label: 'Adjuster Name' },
   { key: 'adjuster_contact', label: 'Adjuster Contact' },
   { key: 'date_of_loss', label: 'Date of Loss' },
+  { key: 'estimate_value', label: 'Estimate Value', get: (row) => estimateValue(row) },
   { key: 'notes', label: 'Notes' },
   { key: 'created_at', label: 'Created At' },
 ]
@@ -183,6 +204,7 @@ function Jobs() {
               <th>Claim #</th>
               <th>Adjuster</th>
               <th>Date of Loss</th>
+              <th>Estimate Value</th>
             </tr>
           </thead>
           <tbody>
@@ -199,11 +221,12 @@ function Jobs() {
                 <td>{c.claim_number}</td>
                 <td>{c.adjuster_name}</td>
                 <td>{c.date_of_loss}</td>
+                <td>{money(estimateValue(c))}</td>
               </tr>
             ))}
             {claims.length === 0 && (
               <tr>
-                <td colSpan={7}>No jobs found.</td>
+                <td colSpan={8}>No jobs found.</td>
               </tr>
             )}
           </tbody>

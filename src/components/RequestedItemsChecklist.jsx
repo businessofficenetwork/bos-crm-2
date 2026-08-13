@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { listRequestedItems, createRequestedItem, setRequestedItemVerified } from '../lib/queries'
+import {
+  listRequestedItems,
+  createRequestedItem,
+  setRequestedItemVerified,
+  deleteRequestedItem,
+} from '../lib/queries'
 
 function RequestedItemsChecklist({ supplementId }) {
   const [items, setItems] = useState([])
@@ -51,6 +56,17 @@ function RequestedItemsChecklist({ supplementId }) {
     }
   }
 
+  async function handleDelete(item) {
+    if (!window.confirm(`Delete "${item.description}"?`)) return
+    setError(null)
+    try {
+      await deleteRequestedItem(item.id)
+      await refresh()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   return (
     <div className="actions-panel">
       <h3>Requested Items</h3>
@@ -74,6 +90,14 @@ function RequestedItemsChecklist({ supplementId }) {
                 />
                 {item.description}
               </label>
+              <button
+                type="button"
+                className="row-link"
+                onClick={() => handleDelete(item)}
+                title="Delete this item"
+              >
+                Delete
+              </button>
             </li>
           ))}
           {items.length === 0 && <li className="actions-empty">No items requested yet.</li>}

@@ -41,7 +41,7 @@ export async function updateContractor(id, updates) {
 export async function listClaims(search = '') {
   let query = supabase
     .from('claims')
-    .select('*, contractor:contractors(id, name)')
+    .select('*, contractor:contractors(id, name), audits(parsed_estimate)')
     .order('created_at', { ascending: false })
 
   const term = search.trim()
@@ -394,6 +394,11 @@ export async function setRequestedItemVerified(id, verified) {
     .update({ verified, verified_at: verified ? new Date().toISOString() : null })
     .eq('id', id)
 
+  if (error) throw error
+}
+
+export async function deleteRequestedItem(id) {
+  const { error } = await supabase.from('supplement_requested_items').delete().eq('id', id)
   if (error) throw error
 }
 
