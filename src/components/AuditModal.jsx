@@ -27,11 +27,13 @@ const YELLOW_FLAG_TERMS = ['starter', 'ice', 'valley']
 const GREEN_FLAG_TERMS = ['window', 'paint']
 const BLUE_FLAG_TERMS = ['gutter']
 
+// Gutter wins ties (e.g. "Prime & paint gutter / downspout" is blue,
+// not green) - checked before the green terms for that reason.
 function lineItemFlagClass(description) {
   const text = (description || '').toLowerCase()
   if (YELLOW_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-yellow'
-  if (GREEN_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-green'
   if (BLUE_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-blue'
+  if (GREEN_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-green'
   return ''
 }
 
