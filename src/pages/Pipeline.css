@@ -227,6 +227,17 @@
   max-width: 640px;
 }
 
+/* Pipeline supplement cards pack in a lot (line items, activity log,
+   actions) that was cramped at the default 640px. 90vw/80vh instead of
+   a fixed pixel size so it actually scales with whatever screen it's
+   opened on, per Keri's request - not just a bigger fixed number. */
+.modal-window-large {
+  width: 90vw;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
 .view-toggle.active {
   background: var(--gold);
   color: var(--dark);

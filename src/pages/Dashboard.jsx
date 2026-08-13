@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getPipelineSummary, listOverdueActions } from '../lib/queries'
 import RemindersPanel from '../components/RemindersPanel'
 import './Contractors.css'
@@ -21,6 +22,7 @@ function money(value) {
 }
 
 function Dashboard() {
+  const navigate = useNavigate()
   const [summary, setSummary] = useState([])
   const [overdue, setOverdue] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,8 +82,16 @@ function Dashboard() {
             <tbody>
               {byStage.map((row) => (
                 <tr key={row.stage}>
-                  <td>{row.stage}</td>
-                  <td>{row.count}</td>
+                  <td>
+                    <button type="button" className="row-link" onClick={() => navigate('/pipeline')}>
+                      {row.stage}
+                    </button>
+                  </td>
+                  <td>
+                    <button type="button" className="row-link" onClick={() => navigate('/pipeline')}>
+                      {row.count}
+                    </button>
+                  </td>
                   <td>{money(row.requested)}</td>
                   <td>{money(row.approved)}</td>
                 </tr>

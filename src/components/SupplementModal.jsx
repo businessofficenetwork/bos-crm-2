@@ -51,7 +51,7 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-window modal-window-large" onClick={(e) => e.stopPropagation()}>
         {editing ? (
           <SupplementForm
             claims={claims}
