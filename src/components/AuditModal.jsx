@@ -20,6 +20,21 @@ function claimLabel(claim) {
   return parts.length ? parts.join(' — ') : claim.id
 }
 
+// Quick visual scan aid for checking the parser got everything - not
+// a judgment about the item itself, just flags categories Keri wants
+// to eyeball every time.
+const YELLOW_FLAG_TERMS = ['starter', 'ice', 'valley']
+const GREEN_FLAG_TERMS = ['window', 'paint']
+const BLUE_FLAG_TERMS = ['gutter']
+
+function lineItemFlagClass(description) {
+  const text = (description || '').toLowerCase()
+  if (YELLOW_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-yellow'
+  if (GREEN_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-green'
+  if (BLUE_FLAG_TERMS.some((term) => text.includes(term))) return 'line-item-flag-blue'
+  return ''
+}
+
 function AuditModal({ audit, claims, onClose, onDone }) {
   const isNew = !audit
   const [claimId, setClaimId] = useState('')
@@ -300,7 +315,7 @@ function AuditModal({ audit, claims, onClose, onDone }) {
                     </thead>
                     <tbody>
                       {audit.parsed_estimate.line_items.map((item, i) => (
-                        <tr key={i}>
+                        <tr key={i} className={lineItemFlagClass(item.description)}>
                           <td>{item.code}</td>
                           <td>{item.description}</td>
                           <td>{item.qty}</td>

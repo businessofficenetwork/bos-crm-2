@@ -138,3 +138,16 @@
 .fullscreen-toggle-btn {
   font-size: 0.85rem;
 }
+
+/* Quick-scan flags on the Parsed Line Items table - not a judgment
+   about the item, just a visual aid for checking the parser caught
+   these categories correctly. */
+.line-item-flag-yellow td {
+  color: var(--gold);
+}
+.line-item-flag-green td {
+  color: var(--green);
+}
+.line-item-flag-blue td {
+  color: var(--blue);
+}
