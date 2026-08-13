@@ -238,6 +238,28 @@
   overflow-y: auto;
 }
 
+/* Shared fullscreen toggle - used by both this page's supplement
+   modal and the audit modal (Audits.jsx imports this file too), so
+   it lives here rather than being duplicated per-page. */
+.modal-overlay-fullscreen {
+  padding: 0;
+  align-items: stretch;
+}
+
+/* .modal-window.modal-window-fullscreen (not just .modal-window-fullscreen)
+   so this reliably beats .modal-window-wide's max-width on specificity
+   rather than depending on which CSS file happens to load second. */
+.modal-window.modal-window-fullscreen {
+  max-width: 100%;
+  width: 100%;
+  min-height: 100vh;
+  border-radius: 0;
+}
+
+.fullscreen-toggle-btn {
+  font-size: 0.85rem;
+}
+
 .view-toggle.active {
   background: var(--gold);
   color: var(--dark);

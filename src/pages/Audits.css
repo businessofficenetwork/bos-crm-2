@@ -107,24 +107,13 @@
 
 /* The findings table (especially the rationale column) is unreadably
    narrow at the shared modal's default 640px, so the audit detail view
-   opens wider by default, with a further fullscreen toggle for really
-   digging into a long rationale. Scoped to these two modifier classes
-   rather than changing .modal-window itself, so other modals
-   (contractor/claim/supplement forms) keep their normal narrow width. */
+   opens wider by default. Scoped to this modifier class rather than
+   changing .modal-window itself, so other modals (contractor/claim
+   forms) keep their normal narrow width. The fullscreen toggle classes
+   this pairs with live in Pipeline.css - they're shared with the
+   Pipeline supplement modal, not audit-specific. */
 .modal-window-wide {
   max-width: 1100px;
-}
-
-.modal-overlay-fullscreen {
-  padding: 0;
-  align-items: stretch;
-}
-
-.modal-window-fullscreen {
-  max-width: 100%;
-  width: 100%;
-  min-height: 100vh;
-  border-radius: 0;
 }
 
 .audit-table-wrap table {
@@ -133,10 +122,6 @@
 
 .audit-table-wrap td {
   vertical-align: top;
-}
-
-.fullscreen-toggle-btn {
-  font-size: 0.85rem;
 }
 
 /* Quick-scan flags on the Parsed Line Items table - not a judgment

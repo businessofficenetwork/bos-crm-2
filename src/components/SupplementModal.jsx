@@ -40,6 +40,7 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
   const isNew = !supplement.id
   const [editing, setEditing] = useState(isNew)
   const [closing, setClosing] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
 
   async function handleSubmit(form) {
     await onSave(supplement, form)
@@ -68,8 +69,23 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-window modal-window-large" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`modal-overlay ${fullscreen ? 'modal-overlay-fullscreen' : ''}`}
+      onClick={onClose}
+    >
+      <div
+        className={`modal-window modal-window-large ${fullscreen ? 'modal-window-fullscreen' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="form-actions">
+          <button
+            type="button"
+            className="fullscreen-toggle-btn"
+            onClick={() => setFullscreen((f) => !f)}
+          >
+            {fullscreen ? '⤡ Exit Fullscreen' : '⤢ Fullscreen'}
+          </button>
+        </div>
         {editing ? (
           <SupplementForm
             claims={claims}
