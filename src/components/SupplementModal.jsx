@@ -39,6 +39,7 @@ function supplementFields(s) {
 function SupplementModal({ supplement, claims, onClose, onSave }) {
   const isNew = !supplement.id
   const [editing, setEditing] = useState(isNew)
+  const [closing, setClosing] = useState(false)
 
   async function handleSubmit(form) {
     await onSave(supplement, form)
@@ -46,6 +47,23 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
       onClose()
     } else {
       setEditing(false)
+    }
+  }
+
+  async function handleCloseOut() {
+    const address = supplement.claim?.property_address || supplement.claim?.claim_number || 'this supplement'
+    if (!window.confirm(`Close out ${address}? It will move out of the active pipeline and into this contractor's Results.`)) {
+      return
+    }
+    setClosing(true)
+    try {
+      await onSave(supplement, {
+        stage: 'Closed',
+        closed_date: supplement.closed_date || new Date().toISOString().slice(0, 10),
+      })
+      onClose()
+    } finally {
+      setClosing(false)
     }
   }
 
@@ -60,14 +78,23 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
             onCancel={() => (isNew ? onClose() : setEditing(false))}
           />
         ) : (
-          <DetailView
-            title={
-              supplement.claim?.property_address || supplement.claim?.claim_number || 'Supplement'
-            }
-            fields={supplementFields(supplement)}
-            onEdit={() => setEditing(true)}
-            onClose={onClose}
-          />
+          <>
+            <DetailView
+              title={
+                supplement.claim?.property_address || supplement.claim?.claim_number || 'Supplement'
+              }
+              fields={supplementFields(supplement)}
+              onEdit={() => setEditing(true)}
+              onClose={onClose}
+            />
+            {supplement.stage !== 'Closed' && (
+              <div className="form-actions">
+                <button type="button" onClick={handleCloseOut} disabled={closing}>
+                  {closing ? 'Closing out…' : 'Close Out Supplement'}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {!isNew && (

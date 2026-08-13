@@ -3,11 +3,17 @@ import KanbanCard from './KanbanCard'
 import { STAGES, stageClassName } from '../lib/stages'
 import { SORT_OPTIONS, sortValue } from '../lib/supplementSort'
 
+// Closed supplements never reach the board (Pipeline.jsx filters them
+// out before this component even sees them), so a "Closed" column
+// would always sit empty - excluded here rather than from the shared
+// STAGES list, since SupplementForm's stage dropdown still needs it.
+const BOARD_STAGES = STAGES.filter((stage) => stage !== 'Closed')
+
 function KanbanBoard({ supplements, nextActionsBySupplement, onCardClick }) {
   const [sortKey, setSortKey] = useState('received')
 
   const columns = useMemo(() => {
-    return STAGES.map((stage) => {
+    return BOARD_STAGES.map((stage) => {
       const cards = supplements
         .filter((s) => s.stage === stage)
         .slice()

@@ -127,6 +127,13 @@ function Pipeline() {
     downloadCsv('pipeline.csv', toCsv(supplements, CSV_COLUMNS))
   }
 
+  // Closed supplements move out of the active pipeline once "Close Out"
+  // is used (see SupplementModal) - they're still fully there, just
+  // viewable under their contractor's Results tab instead of here.
+  // CSV export still includes everything, since that's meant to be a
+  // full data dump.
+  const activeSupplements = supplements.filter((s) => s.stage !== 'Closed')
+
   return (
     <div>
       <div className="contractors-header">
@@ -175,7 +182,7 @@ function Pipeline() {
 
       {!loading && !error && view === 'board' && (
         <KanbanBoard
-          supplements={supplements}
+          supplements={activeSupplements}
           nextActionsBySupplement={nextActionsBySupplement}
           onCardClick={setViewing}
         />
@@ -183,7 +190,7 @@ function Pipeline() {
 
       {!loading && !error && view === 'list' && (
         <SupplementListView
-          supplements={supplements}
+          supplements={activeSupplements}
           nextActionsBySupplement={nextActionsBySupplement}
           onRowClick={setViewing}
         />
