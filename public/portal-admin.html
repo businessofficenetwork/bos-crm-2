@@ -512,15 +512,19 @@ async function createLogin() {
     alertEl.className = 'alert alert-error'; alertEl.classList.remove('hidden');
     return;
   }
+  let result;
   try {
-    await callApi('portal-admin-api', { action: 'createLogin', token: adminToken, contractorId, username, password });
+    result = await callApi('portal-admin-api', { action: 'createLogin', token: adminToken, contractorId, username, password });
   } catch (e) {
     alertEl.textContent = 'Error: ' + e.message;
     alertEl.className = 'alert alert-error'; alertEl.classList.remove('hidden');
     return;
   }
   closeModal();
-  showAlert(`Portal login saved — username: ${username}, password: ${password}. Share these with the contractor now; they won't be shown again.`, true);
+  const emailNote = result.emailSent
+    ? 'An email with these details was just sent to the contractor.'
+    : "Share these with the contractor yourself — no email was sent (either no email is on file, or email delivery isn't fully set up yet).";
+  showAlert(`Portal login saved — username: ${username}, password: ${password}. ${emailNote}`, true);
   await init();
   if (selectedContractor) renderContractorPanel();
 }

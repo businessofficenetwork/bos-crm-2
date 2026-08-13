@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifySession, hashPassword } from './lib/portalAuth.js'
+import { notifyPortalInvite } from './lib/notifyPortalInvite.js'
 
 function json(statusCode, body) {
   return { statusCode, body: JSON.stringify(body) }
@@ -145,7 +146,24 @@ export const handler = async function (event) {
         { onConflict: 'username' }
       )
       if (error) return json(500, { error: error.message })
-      return json(200, { ok: true })
+
+      // Best-effort - a failed/skipped email never blocks the login
+      // itself. Skips silently if the contractor has no email on
+      // file; the admin panel's own success alert still shows the
+      // credentials either way, so nothing is lost.
+      const { data: contractor } = await supabase
+        .from('contractors')
+        .select('name, email')
+        .eq('id', payload.contractorId)
+        .single()
+      const emailSent = await notifyPortalInvite({
+        contractorEmail: contractor?.email,
+        contractorName: contractor?.name,
+        username,
+        password,
+      })
+
+      return json(200, { ok: true, emailSent })
     }
 
     default:
