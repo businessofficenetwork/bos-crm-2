@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPipelineSummary, listOverdueActions } from '../lib/queries'
+import { getPipelineSummary, listOverdueActions, getDashboardStats } from '../lib/queries'
 import RemindersPanel from '../components/RemindersPanel'
+import DashboardStats from '../components/DashboardStats'
 import './Contractors.css'
+import './Dashboard.css'
 
 const STAGES = [
   'Intake',
@@ -25,6 +27,7 @@ function Dashboard() {
   const navigate = useNavigate()
   const [summary, setSummary] = useState([])
   const [overdue, setOverdue] = useState([])
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -33,12 +36,14 @@ function Dashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [summaryData, overdueData] = await Promise.all([
+        const [summaryData, overdueData, statsData] = await Promise.all([
           getPipelineSummary(),
           listOverdueActions(),
+          getDashboardStats(),
         ])
         setSummary(summaryData)
         setOverdue(overdueData)
+        setStats(statsData)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -67,6 +72,8 @@ function Dashboard() {
 
       {!loading && !error && (
         <>
+          <DashboardStats stats={stats} />
+
           <RemindersPanel />
 
           <h2>Pipeline</h2>

@@ -158,6 +158,67 @@ export async function getPipelineSummary() {
   return data
 }
 
+// One gathering call for the dashboard's summary cards - counts only,
+// not full row detail, so each card links through to its own page
+// (Contractors/Jobs/Pipeline/Leads/Audits) for the real list.
+export async function getDashboardStats() {
+  const [
+    { data: contractors, error: contractorsError },
+    { data: claims, error: claimsError },
+    { data: supplements, error: supplementsError },
+    { data: leads, error: leadsError },
+    { data: audits, error: auditsError },
+    { data: agingActions, error: agingError },
+  ] = await Promise.all([
+    supabase.from('contractors').select('id, status'),
+    supabase.from('claims').select('id'),
+    supabase.from('supplements').select('id, stage, supplement_requested, supplement_approved'),
+    supabase.from('leads').select('id, status'),
+    supabase
+      .from('audits')
+      .select('id, status, reviewed_by, est_total_recovery')
+      .eq('status', 'findings_ready'),
+    supabase
+      .from('actions')
+      .select('id, description')
+      .eq('completed', false)
+      .or('description.ilike.Follow up:%,description.ilike.Invoice reminder:%,description.ilike.Collections:%'),
+  ])
+
+  const firstError = contractorsError || claimsError || supplementsError || leadsError || auditsError || agingError
+  if (firstError) throw firstError
+
+  const activeSupplements = (supplements || []).filter((s) => s.stage !== 'Closed')
+
+  return {
+    contractors: {
+      total: contractors?.length || 0,
+      active: (contractors || []).filter((c) => c.status === 'active').length,
+      prospect: (contractors || []).filter((c) => c.status === 'prospect').length,
+    },
+    claims: {
+      total: claims?.length || 0,
+    },
+    pipeline: {
+      activeCount: activeSupplements.length,
+      requested: activeSupplements.reduce((sum, s) => sum + (Number(s.supplement_requested) || 0), 0),
+      approved: activeSupplements.reduce((sum, s) => sum + (Number(s.supplement_approved) || 0), 0),
+    },
+    leads: {
+      total: leads?.length || 0,
+      active: (leads || []).filter((l) => ['new', 'contacted', 'qualified'].includes(l.status)).length,
+      new: (leads || []).filter((l) => l.status === 'new').length,
+    },
+    audits: {
+      awaitingReview: (audits || []).filter((a) => !a.reviewed_by).length,
+      pendingRecovery: (audits || []).reduce((sum, a) => sum + (Number(a.est_total_recovery) || 0), 0),
+    },
+    aging: {
+      count: agingActions?.length || 0,
+    },
+  }
+}
+
 export async function listOverdueActions() {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
