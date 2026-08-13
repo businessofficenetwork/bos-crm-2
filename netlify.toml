@@ -3,15 +3,18 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# Netlify's secrets scanner flags VITE_SUPABASE_URL/ANON_KEY because
-# portal.html hardcodes the same values as plain JS constants (not
-# read from an env var - it's a static file, not part of Vite's
-# build). Both are meant to be public: a Supabase project URL and
-# anon key are safe to expose in the browser, since real access
-# control is enforced by Row Level Security, not by keeping these
-# secret. Without this, every deploy gets blocked by the scanner.
+# Netlify's secrets scanner flags any registered env var whose VALUE
+# appears in the build output - portal.html hardcodes the Supabase
+# project URL/anon key as plain JS constants (it's a static file, not
+# templated through Vite). SUPABASE_URL/ANON_KEY and their VITE_
+# counterparts hold the identical values, so both pairs need to be
+# listed here, not just the VITE_ ones - the first attempt at this
+# fix only covered VITE_ and the scan still failed on the plain
+# names. All four are meant to be public (Supabase URL + anon key,
+# protected by Row Level Security, not secrecy) - never add
+# SUPABASE_SERVICE_ROLE_KEY here, that one is a real secret.
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL,SUPABASE_ANON_KEY"
 
 [[redirects]]
   from = "/*"
