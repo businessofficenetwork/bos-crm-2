@@ -1,5 +1,6 @@
-import { stageClassName, COMPLEXITY_LABELS } from '../lib/stages'
+import { COMPLEXITY_LABELS, complexityColorClass } from '../lib/stages'
 import { dueStatus } from '../lib/dueStatus'
+import { contractorColor } from '../lib/contractorColor'
 
 function formatDate(value) {
   if (!value) return null
@@ -17,10 +18,11 @@ function KanbanCard({ supplement, nextAction, onClick }) {
   const actionStatus = nextAction ? dueStatus(nextAction) : null
   const needsAction = actionStatus === 'overdue'
   const cardStyle = supplement.card_color ? { background: supplement.card_color } : undefined
+  const contractorDotColor = contractorColor(claim?.contractor?.id)
 
   return (
     <div
-      className={`kanban-card ${stageClassName(supplement.stage)}`}
+      className={`kanban-card ${complexityColorClass(supplement)}`}
       style={cardStyle}
       onClick={onClick}
       role="button"
@@ -28,7 +30,16 @@ function KanbanCard({ supplement, nextAction, onClick }) {
     >
       {needsAction && <span className="kanban-card-alert" title="Action needed">!</span>}
 
-      <div className="kanban-card-title">{jobName}</div>
+      <div className="kanban-card-title">
+        {contractorDotColor && (
+          <span
+            className="kanban-card-contractor-dot"
+            style={{ background: contractorDotColor }}
+            title={claim?.contractor?.name}
+          />
+        )}
+        {jobName}
+      </div>
 
       <div className="kanban-card-row">
         <span>Entered {dateEntered || '—'}</span>

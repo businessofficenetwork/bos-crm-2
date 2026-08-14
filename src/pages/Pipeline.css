@@ -9,6 +9,15 @@
   --stage-paid: #4caf50;
   --stage-invoiced: #3a7fd5;
   --stage-closed: #6c3483;
+
+  /* Kanban cards color by dollar complexity now, not stage - column
+     headers (above) keep the stage colors, since that's still the
+     board's organizing axis. */
+  --complexity-blue: #3a7fd5;
+  --complexity-green: #4a9c6d;
+  --complexity-yellow: #e8c93a;
+  --complexity-orange: #e8862e;
+  --complexity-red: #c0392b;
 }
 
 .kanban-sort {
@@ -91,6 +100,20 @@
   font-weight: 700;
   margin-bottom: 0.35rem;
   padding-right: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Small dot next to the job name, colored per-contractor (see
+   contractorColor.js) so cards from the same contractor are
+   recognizable at a glance across the whole board. */
+.kanban-card-contractor-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  flex-shrink: 0;
 }
 
 .kanban-card-row {
@@ -208,6 +231,25 @@
 }
 .kanban-card.stage-closed {
   border-color: var(--stage-closed);
+}
+
+/* Cards now color by dollar complexity instead of stage (column headers
+   above still use the stage-* colors - that's unchanged). Blue/green =
+   $1500 and under per Keri's request, rising to red at the high end. */
+.kanban-card.complexity-blue {
+  border-color: var(--complexity-blue);
+}
+.kanban-card.complexity-green {
+  border-color: var(--complexity-green);
+}
+.kanban-card.complexity-yellow {
+  border-color: var(--complexity-yellow);
+}
+.kanban-card.complexity-orange {
+  border-color: var(--complexity-orange);
+}
+.kanban-card.complexity-red {
+  border-color: var(--complexity-red);
 }
 
 .modal-overlay {

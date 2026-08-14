@@ -85,7 +85,7 @@ export async function listSupplements(search = '') {
   let query = supabase
     .from('supplements')
     .select(
-      '*, claim:claims!inner(id, property_address, homeowner_name, claim_number, contractor:contractors(name))'
+      '*, claim:claims!inner(id, property_address, homeowner_name, claim_number, contractor:contractors(id, name))'
     )
     .order('created_at', { ascending: false })
 
