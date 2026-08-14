@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifySession } from './lib/portalAuth.js'
+import { notifySubmission } from './lib/notifySubmission.js'
 
 const STAGES_FOR_SUBMIT = 'Intake'
 
@@ -158,7 +159,7 @@ export const handler = async function (event) {
     case 'startAudit': {
       const { data: claim } = await supabase
         .from('claims')
-        .select('id, property_address, claim_number')
+        .select('id, property_address, claim_number, contractor:contractors(name)')
         .eq('id', payload.claimId)
         .eq('contractor_id', contractorId)
         .single()
@@ -194,6 +195,12 @@ export const handler = async function (event) {
           body: JSON.stringify({ audit_id: audit.id }),
         }).catch((err) => console.warn('Could not trigger audit-run-background:', err.message || err))
       }
+
+      await notifySubmission({
+        contractorName: claim.contractor?.name,
+        address: claim.property_address || claim.claim_number,
+        missing,
+      }).catch((err) => console.warn('New-submission notify failed:', err.message || err))
 
       return json(200, { auditId: audit.id, missing })
     }
