@@ -9,6 +9,7 @@ import {
   markAuditReviewed,
   draftFindingsEmail,
   updateAuditDocuments,
+  getAuditDocumentUrl,
 } from '../lib/queries'
 
 function money(value) {
@@ -59,6 +60,8 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   const [missingMeasurementFile, setMissingMeasurementFile] = useState(null)
   const [missingPhotoFiles, setMissingPhotoFiles] = useState([])
   const [addingDocs, setAddingDocs] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   async function setFindingStatus(index, status) {
     const updated = findings.map((f, i) => (i === index ? { ...f, review_status: status } : f))
@@ -169,6 +172,23 @@ function AuditModal({ audit, claims, onClose, onDone }) {
       setError(err.message)
     } finally {
       setAddingDocs(false)
+    }
+  }
+
+  async function toggleOriginalPdf() {
+    if (pdfUrl) {
+      setPdfUrl(null)
+      return
+    }
+    setPdfLoading(true)
+    setError(null)
+    try {
+      const url = await getAuditDocumentUrl(audit.estimate_pdf_path)
+      setPdfUrl(url)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setPdfLoading(false)
     }
   }
 
@@ -442,32 +462,44 @@ function AuditModal({ audit, claims, onClose, onDone }) {
 
             {audit.parsed_estimate?.line_items?.length > 0 && (
               <div className="audit-line-items">
-                <h3>Parsed Line Items</h3>
-                <div className="audit-table-wrap">
-                  <table className="contractors-table">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Description</th>
-                        <th>Qty</th>
-                        <th>Unit</th>
-                        <th>RCV</th>
-                        <th>ACV</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {audit.parsed_estimate.line_items.map((item, i) => (
-                        <tr key={i} className={lineItemFlagClass(item.description)}>
-                          <td>{item.code}</td>
-                          <td>{item.description}</td>
-                          <td>{item.qty}</td>
-                          <td>{item.unit}</td>
-                          <td>{money(item.rcv)}</td>
-                          <td>{money(item.acv)}</td>
+                <div className="audit-line-items-header">
+                  <h3>Parsed Line Items</h3>
+                  {audit.estimate_pdf_path && (
+                    <button type="button" onClick={toggleOriginalPdf} disabled={pdfLoading}>
+                      {pdfLoading ? 'Loading…' : pdfUrl ? 'Hide Original PDF' : 'Show Original PDF'}
+                    </button>
+                  )}
+                </div>
+                <div className={pdfUrl ? 'audit-side-by-side' : undefined}>
+                  {pdfUrl && (
+                    <iframe className="audit-pdf-viewer" src={pdfUrl} title="Original estimate PDF" />
+                  )}
+                  <div className="audit-table-wrap">
+                    <table className="contractors-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Description</th>
+                          <th>Qty</th>
+                          <th>Unit</th>
+                          <th>RCV</th>
+                          <th>ACV</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {audit.parsed_estimate.line_items.map((item, i) => (
+                          <tr key={i} className={lineItemFlagClass(item.description)}>
+                            <td>{item.code}</td>
+                            <td>{item.description}</td>
+                            <td>{item.qty}</td>
+                            <td>{item.unit}</td>
+                            <td>{money(item.rcv)}</td>
+                            <td>{money(item.acv)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}

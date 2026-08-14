@@ -75,6 +75,37 @@
   overflow-x: auto;
 }
 
+.audit-line-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Side-by-side QA view: original PDF next to the parsed table, so
+   Keri can check the parser against the real document without
+   switching windows. Stacks on narrow screens instead of squeezing
+   both panes unreadably thin. */
+.audit-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .audit-side-by-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+.audit-pdf-viewer {
+  width: 100%;
+  height: 75vh;
+  border: 1px solid var(--dark4);
+  border-radius: 6px;
+}
+
 .finding-status {
   font-size: 0.75rem;
   font-weight: 600;

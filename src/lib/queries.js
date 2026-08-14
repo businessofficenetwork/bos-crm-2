@@ -502,6 +502,16 @@ export async function uploadAuditPhotos(claimId, files) {
   return paths
 }
 
+// Signed URL for viewing an audit's source document inline (the
+// bucket is private, so a plain public URL won't load) - used by the
+// side-by-side original/parsed view so Keri can eyeball the parser
+// against the real PDF. 1 hour is plenty for one review session.
+export async function getAuditDocumentUrl(path) {
+  const { data, error } = await supabase.storage.from('claim-docs').createSignedUrl(path, 3600)
+  if (error) throw error
+  return data.signedUrl
+}
+
 export async function createAudit(audit) {
   const { data, error } = await supabase.from('audits').insert(audit).select().single()
   if (error) throw error
