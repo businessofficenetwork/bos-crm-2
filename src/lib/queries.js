@@ -120,6 +120,36 @@ export async function updateSupplement(id, updates) {
   return data
 }
 
+// All supplements for a contractor's claims, active and closed alike -
+// the Contractor detail view splits them into the Supplements/Results
+// tabs client-side rather than two separate queries.
+export async function listSupplementsForContractor(contractorId) {
+  const { data, error } = await supabase
+    .from('supplements')
+    .select('*, claim:claims!inner(id, property_address, homeowner_name, claim_number, contractor_id)')
+    .eq('claim.contractor_id', contractorId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+// Every incomplete action across a contractor's supplements - powers
+// the "pending action" warning shown when opening their file.
+export async function listPendingActionsForContractor(contractorId) {
+  const { data, error } = await supabase
+    .from('actions')
+    .select(
+      '*, supplement:supplements!inner(id, claim:claims!inner(property_address, claim_number, contractor_id))'
+    )
+    .eq('supplement.claim.contractor_id', contractorId)
+    .eq('completed', false)
+    .order('due_date', { ascending: true, nullsFirst: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function listActions(supplementId) {
   const { data, error } = await supabase
     .from('actions')
@@ -532,6 +562,30 @@ export async function draftFindingsEmail(auditId) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || 'Could not draft email')
   return data
+}
+
+// portal_messages is RLS-locked to the service-role key (see
+// 0017_secure_portal_tables.sql), so reading/sending goes through
+// crm-messages.js rather than a direct supabase call.
+export async function listContractorMessages(contractorId) {
+  const res = await fetch('/.netlify/functions/crm-messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'list', contractorId }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Could not load messages')
+  return data.messages
+}
+
+export async function sendContractorMessage(contractorId, message) {
+  const res = await fetch('/.netlify/functions/crm-messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'send', contractorId, message }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Could not send message')
 }
 
 export async function createSupplementActivity(entry) {

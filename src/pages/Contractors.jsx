@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import ContractorForm from '../components/ContractorForm'
-import DetailView from '../components/DetailView'
+import ContractorDetail from '../components/ContractorDetail'
 import { listContractors, createContractor, updateContractor } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import './Contractors.css'
@@ -100,8 +100,8 @@ function Contractors() {
       />
 
       {viewing && !editing && (
-        <DetailView
-          title={viewing.name}
+        <ContractorDetail
+          contractor={viewing}
           fields={contractorFields(viewing)}
           onEdit={() => {
             setEditing(viewing)
