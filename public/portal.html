@@ -290,10 +290,19 @@ tr:last-child td{border-bottom:none}
               </select>
             </div>
             <div class="field full-span">
-              <label>Upload Documents <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--grey)">— carrier estimate, measurements, photo report (PDF, JPG, PNG)</span></label>
-              <input type="file" id="sf_files" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx"
+              <label>Carrier Estimate (PDF) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--grey)">— required to start the audit</span></label>
+              <input type="file" id="sf_estimate" accept=".pdf"
                 style="padding:10px 12px;border:1.5px solid var(--line);background:var(--paper);font-size:14px">
-              <div id="sf_file_list" style="font-size:13px;color:var(--grey);margin-top:4px"></div>
+            </div>
+            <div class="field full-span">
+              <label>Measurement Report (PDF) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--grey)">— required to start the audit</span></label>
+              <input type="file" id="sf_measurement" accept=".pdf"
+                style="padding:10px 12px;border:1.5px solid var(--line);background:var(--paper);font-size:14px">
+            </div>
+            <div class="field full-span">
+              <label>Photos <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--grey)">— required to start the audit, multiple files OK</span></label>
+              <input type="file" id="sf_photos" multiple accept=".jpg,.jpeg,.png"
+                style="padding:10px 12px;border:1.5px solid var(--line);background:var(--paper);font-size:14px">
             </div>
             <div class="field full-span">
               <label>Notes for Keri</label>
@@ -304,7 +313,7 @@ tr:last-child td{border-bottom:none}
             <button class="btn-primary" onclick="submitClaim()">Submit claim</button>
             <button class="btn-secondary" onclick="clearForm()">Clear</button>
           </div>
-          <p style="font-size:13px;color:var(--grey);margin-top:14px">After submitting, send the carrier estimate, measurements, and photo report to <strong>supplements@businessofficenetwork.com</strong> to start the clock.</p>
+          <p style="font-size:13px;color:var(--grey);margin-top:14px">Upload all three documents above to start the audit automatically. Missing one? Submit anyway — you can add it later, or email it to <strong>supplements@businessofficenetwork.com</strong> and we'll add it to your claim.</p>
         </div>
       </div>
     </div>
@@ -638,23 +647,43 @@ async function submitClaim() {
   // Upload docs directly to Storage using short-lived signed URLs — the
   // function verifies the claim belongs to this contractor before
   // handing one out, so this doesn't need the anon key to have any
-  // general bucket access.
-  const fileInput = document.getElementById('sf_files');
-  const files = fileInput.files;
-  if (files && files.length > 0) {
-    for (const file of files) {
-      try {
-        const { path, token } = await callApi('portal-api', {
-          action: 'uploadUrl', token: sessionToken, claimId: claim.id, filename: file.name,
-        });
-        await db.storage.from('claim-docs').uploadToSignedUrl(path, token, file);
-      } catch (e) {
-        console.error('Upload failed for', file.name, e);
-      }
-    }
+  // general bucket access. Each category uploads separately so the
+  // backend can track exactly which of the three it received.
+  async function uploadOne(file) {
+    const { path, token } = await callApi('portal-api', {
+      action: 'uploadUrl', token: sessionToken, claimId: claim.id, filename: file.name,
+    });
+    await db.storage.from('claim-docs').uploadToSignedUrl(path, token, file);
+    return path;
   }
 
-  alertEl.textContent = '✓ Claim submitted! Check your queue and send your docs to supplements@businessofficenetwork.com.';
+  let estimatePath = null, measurementPath = null;
+  const photoPaths = [];
+  try {
+    const estimateFile = document.getElementById('sf_estimate').files[0];
+    if (estimateFile) estimatePath = await uploadOne(estimateFile);
+    const measurementFile = document.getElementById('sf_measurement').files[0];
+    if (measurementFile) measurementPath = await uploadOne(measurementFile);
+    for (const file of document.getElementById('sf_photos').files) {
+      photoPaths.push(await uploadOne(file));
+    }
+  } catch (e) {
+    console.error('Upload failed', e);
+  }
+
+  let auditResult;
+  try {
+    auditResult = await callApi('portal-api', {
+      action: 'startAudit', token: sessionToken, claimId: claim.id,
+      estimatePath, measurementPath, photoPaths,
+    });
+  } catch (e) {
+    console.error('Could not start audit tracking', e);
+  }
+
+  alertEl.textContent = auditResult && auditResult.missing && auditResult.missing.length
+    ? `✓ Claim submitted! We're still missing: ${auditResult.missing.join(', ')}. Send those when you can to start the audit.`
+    : '✓ Claim submitted! The audit is starting automatically — check your queue for updates.';
   alertEl.className = 'alert alert-success';
   alertEl.classList.remove('hidden');
   clearForm();
@@ -662,16 +691,12 @@ async function submitClaim() {
   window.scrollTo(0,0);
 }
 
-document.getElementById('sf_files').addEventListener('change', function() {
-  const names = [...this.files].map(f => '✓ ' + f.name).join('<br>');
-  document.getElementById('sf_file_list').innerHTML = names;
-});
-
 function clearForm() {
   ['sf_address','sf_homeowner','sf_carrier','sf_claim_num','sf_adjuster_name','sf_adjuster_contact','sf_dol','sf_notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('sf_complexity').value = '';
-  document.getElementById('sf_files').value = '';
-  document.getElementById('sf_file_list').innerHTML = '';
+  document.getElementById('sf_estimate').value = '';
+  document.getElementById('sf_measurement').value = '';
+  document.getElementById('sf_photos').value = '';
 }
 
 // ── DOWNLOAD DOC ──

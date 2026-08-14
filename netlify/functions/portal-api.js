@@ -140,11 +140,62 @@ export const handler = async function (event) {
       await supabase.from('portal_messages').insert({
         contractor_id: contractorId,
         sender: 'bon',
-        message: `Got it! New claim received for ${address} — ${homeowner} · ${carrier}. Remember to send the carrier estimate, measurements, and photo report to supplements@businessofficenetwork.com. You'll see progress in your queue as we work through it.`,
+        message: `Got it! New claim received for ${address} — ${homeowner} · ${carrier}. If you attached the carrier estimate, measurement report, and photos, the audit is starting automatically. You'll see progress in your queue as we work through it.`,
         is_read: false,
       })
 
       return json(200, { claim })
+    }
+
+    // Called right after submitClaim, once whichever of the three
+    // documents the contractor attached have finished uploading.
+    // Creates the audits row that tracks intake for this claim - if
+    // all three are present it fires the same background parse/rule
+    // pass pipeline the CRM's own "Run Parser" button uses; if not,
+    // the row just sits at 'queued' with whichever paths are null,
+    // and the missing list comes back so the contractor sees exactly
+    // what's still needed.
+    case 'startAudit': {
+      const { data: claim } = await supabase
+        .from('claims')
+        .select('id, property_address, claim_number')
+        .eq('id', payload.claimId)
+        .eq('contractor_id', contractorId)
+        .single()
+      if (!claim) return json(403, { error: 'Not found' })
+
+      const estimatePath = payload.estimatePath || null
+      const measurementPath = payload.measurementPath || null
+      const photoPaths = Array.isArray(payload.photoPaths) && payload.photoPaths.length ? payload.photoPaths : null
+
+      const { data: audit, error: auditErr } = await supabase
+        .from('audits')
+        .insert({
+          claim_id: claim.id,
+          status: 'queued',
+          estimate_pdf_path: estimatePath,
+          measurement_report_path: measurementPath,
+          photos_paths: photoPaths,
+        })
+        .select()
+        .single()
+      if (auditErr) return json(500, { error: 'Could not start audit tracking' })
+
+      const missing = []
+      if (!estimatePath) missing.push('carrier estimate')
+      if (!measurementPath) missing.push('measurement report')
+      if (!photoPaths) missing.push('photos')
+
+      if (missing.length === 0) {
+        const baseUrl = process.env.URL || 'http://localhost:8888'
+        await fetch(`${baseUrl}/.netlify/functions/audit-run-background`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audit_id: audit.id }),
+        }).catch((err) => console.warn('Could not trigger audit-run-background:', err.message || err))
+      }
+
+      return json(200, { auditId: audit.id, missing })
     }
 
     case 'uploadUrl': {
