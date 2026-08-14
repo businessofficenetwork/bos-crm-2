@@ -5,6 +5,7 @@ import ActionsPanel from './ActionsPanel'
 import RequestedItemsChecklist from './RequestedItemsChecklist'
 import SupplementActivityLog from './SupplementActivityLog'
 import { COMPLEXITY_LABELS } from '../lib/stages'
+import { contractorColor } from '../lib/contractorColor'
 
 function money(value) {
   return value === null || value === undefined ? '' : `$${Number(value).toFixed(2)}`
@@ -102,6 +103,7 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
               fields={supplementFields(supplement)}
               onEdit={() => setEditing(true)}
               onClose={onClose}
+              headerColor={contractorColor(supplement.claim?.contractor?.id)}
             />
             {supplement.stage !== 'Closed' && (
               <div className="form-actions">

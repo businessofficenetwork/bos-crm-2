@@ -1,7 +1,10 @@
-function DetailView({ title, fields, onEdit, onClose }) {
+function DetailView({ title, fields, onEdit, onClose, headerColor }) {
   return (
     <div className="detail-view">
-      <div className="detail-header">
+      <div
+        className="detail-header"
+        style={headerColor ? { borderLeft: `4px solid ${headerColor}`, paddingLeft: '0.6rem' } : undefined}
+      >
         <h3>{title}</h3>
         <div className="form-actions">
           <button type="button" onClick={onEdit}>

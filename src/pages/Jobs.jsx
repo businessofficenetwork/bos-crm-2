@@ -11,6 +11,7 @@ import {
   listContractors,
 } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
+import { contractorColor } from '../lib/contractorColor'
 import './Contractors.css'
 
 function money(value) {
@@ -166,6 +167,7 @@ function Jobs() {
         <DetailView
           title={viewing.property_address || viewing.claim_number || 'Job'}
           fields={claimFields(viewing)}
+          headerColor={contractorColor(viewing.contractor?.id)}
           onEdit={() => {
             setEditing(viewing)
             setViewing(null)
