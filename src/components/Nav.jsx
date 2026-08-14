@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { countOverdueActions, countOverdueReminders } from '../lib/queries'
 
-function Nav() {
+function Nav({ isAdmin }) {
   const location = useLocation()
   const [overdueCount, setOverdueCount] = useState(0)
 
@@ -26,6 +26,7 @@ function Nav() {
       <a href="https://bosknowledge.netlify.app/" target="_blank" rel="noopener noreferrer">
         Knowledge Base ↗
       </a>
+      {isAdmin && <NavLink to="/settings">Settings</NavLink>}
     </nav>
   )
 }

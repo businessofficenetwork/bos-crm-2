@@ -20,6 +20,17 @@
   border-bottom: 1px solid var(--dark4);
 }
 
+.topbar-user {
+  margin-right: auto;
+  color: var(--light-dim);
+  font-size: 0.9rem;
+}
+
+.topbar-signout {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+}
+
 .notif {
   position: relative;
 }

@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import NotificationDropdown from './NotificationDropdown'
 import PortalNotifications from './PortalNotifications'
 import { listOverdueActions, listMentions, markCommentRead } from '../lib/queries'
+import { clearSession } from '../lib/auth'
 
-function Topbar() {
+function Topbar({ session, onSignOut }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [actions, setActions] = useState([])
@@ -35,8 +36,17 @@ function Topbar() {
     refresh()
   }
 
+  function handleSignOut() {
+    clearSession()
+    onSignOut()
+  }
+
   return (
     <div className="topbar">
+      <span className="topbar-user">{session.name}</span>
+      <button type="button" className="topbar-signout" onClick={handleSignOut}>
+        Sign Out
+      </button>
       <PortalNotifications />
       <NotificationDropdown
         icon="🔔"

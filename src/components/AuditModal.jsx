@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AUDIT_STATUS_LABELS, missingDocuments } from '../lib/auditStages'
 import { contractorColor } from '../lib/contractorColor'
+import { getSession } from '../lib/auth'
 import {
   uploadAuditPdf,
   uploadAuditPhotos,
@@ -79,7 +80,7 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   }
 
   async function handleMarkReviewed() {
-    const name = reviewerName.trim()
+    const name = getSession()?.name || reviewerName.trim()
     if (!name) {
       setError('Enter your name to mark this reviewed.')
       return
@@ -419,6 +420,12 @@ function AuditModal({ audit, claims, onClose, onDone }) {
                     <p>
                       Reviewed by <strong>{reviewedBy}</strong>
                     </p>
+                  ) : getSession()?.name ? (
+                    <div className="form-actions">
+                      <button type="button" onClick={handleMarkReviewed} disabled={saving}>
+                        {saving ? 'Saving…' : `Mark Reviewed as ${getSession().name}`}
+                      </button>
+                    </div>
                   ) : (
                     <div className="form-actions">
                       <input
