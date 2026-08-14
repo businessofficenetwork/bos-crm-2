@@ -50,6 +50,11 @@
   font-size: 0.8rem;
 }
 
+.audit-card-missing {
+  color: var(--gold);
+  font-size: 0.8rem;
+}
+
 .finding-pending-signoff {
   color: var(--gold);
   font-weight: 600;
@@ -135,4 +140,24 @@
 }
 .line-item-flag-blue td {
   color: var(--blue);
+}
+
+.email-draft {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.email-draft label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--light-dim);
+}
+.email-draft input,
+.email-draft textarea {
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AUDIT_STATUS_LABELS } from '../lib/auditStages'
+import { AUDIT_STATUS_LABELS, missingDocuments } from '../lib/auditStages'
 import {
   uploadAuditPdf,
   uploadAuditPhotos,
@@ -7,6 +7,8 @@ import {
   runAudit,
   updateAuditFindings,
   markAuditReviewed,
+  draftFindingsEmail,
+  updateAuditDocuments,
 } from '../lib/queries'
 
 function money(value) {
@@ -50,6 +52,13 @@ function AuditModal({ audit, claims, onClose, onDone }) {
   const [reviewedBy, setReviewedBy] = useState(audit?.reviewed_by || null)
   const [reviewerName, setReviewerName] = useState('')
   const [fullscreen, setFullscreen] = useState(false)
+  const [draftingEmail, setDraftingEmail] = useState(false)
+  const [emailDraft, setEmailDraft] = useState(null)
+  const [copyStatus, setCopyStatus] = useState('')
+  const [missingEstimateFile, setMissingEstimateFile] = useState(null)
+  const [missingMeasurementFile, setMissingMeasurementFile] = useState(null)
+  const [missingPhotoFiles, setMissingPhotoFiles] = useState([])
+  const [addingDocs, setAddingDocs] = useState(false)
 
   async function setFindingStatus(index, status) {
     const updated = findings.map((f, i) => (i === index ? { ...f, review_status: status } : f))
@@ -83,6 +92,30 @@ function AuditModal({ audit, claims, onClose, onDone }) {
     }
   }
 
+  async function handleDraftEmail() {
+    setDraftingEmail(true)
+    setError(null)
+    setCopyStatus('')
+    try {
+      const draft = await draftFindingsEmail(audit.id)
+      setEmailDraft(draft)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDraftingEmail(false)
+    }
+  }
+
+  async function handleCopyEmail() {
+    const text = `Subject: ${emailDraft.subject}\n\n${emailDraft.body}`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('Copied!')
+    } catch {
+      setCopyStatus('Could not copy — select the text manually.')
+    }
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
     if (!claimId || !file) {
@@ -107,6 +140,35 @@ function AuditModal({ audit, claims, onClose, onDone }) {
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleAddMissingDocs() {
+    setAddingDocs(true)
+    setError(null)
+    try {
+      const claimId = audit.claim_id
+      const updates = {}
+      if (missingEstimateFile) updates.estimate_pdf_path = await uploadAuditPdf(claimId, missingEstimateFile)
+      if (missingMeasurementFile) {
+        updates.measurement_report_path = await uploadAuditPdf(claimId, missingMeasurementFile)
+      }
+      if (missingPhotoFiles.length) {
+        updates.photos_paths = await uploadAuditPhotos(claimId, missingPhotoFiles)
+      }
+      if (Object.keys(updates).length === 0) {
+        setError('Choose at least one file to add.')
+        return
+      }
+      const updated = await updateAuditDocuments(audit.id, updates)
+      if (missingDocuments(updated).length === 0) {
+        await runAudit(audit.id)
+      }
+      onDone()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAddingDocs(false)
     }
   }
 
@@ -227,6 +289,52 @@ function AuditModal({ audit, claims, onClose, onDone }) {
             {error && <p className="form-error">{error}</p>}
             {audit.error_detail && <p className="form-error">{audit.error_detail}</p>}
 
+            {audit.status === 'queued' && missingDocuments(audit).length > 0 && (
+              <div className="audit-review">
+                <h3>Add Missing Documents</h3>
+                <p className="form-hint">
+                  Still need: {missingDocuments(audit).join(', ')}. Adding the last one starts the
+                  audit automatically.
+                </p>
+                {missingDocuments(audit).includes('Estimate') && (
+                  <label>
+                    Carrier estimate (PDF)
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setMissingEstimateFile(e.target.files[0] || null)}
+                    />
+                  </label>
+                )}
+                {missingDocuments(audit).includes('Measurement Report') && (
+                  <label>
+                    Measurement report (PDF)
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setMissingMeasurementFile(e.target.files[0] || null)}
+                    />
+                  </label>
+                )}
+                {missingDocuments(audit).includes('Photos') && (
+                  <label>
+                    Photos
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      multiple
+                      onChange={(e) => setMissingPhotoFiles([...e.target.files])}
+                    />
+                  </label>
+                )}
+                <div className="form-actions">
+                  <button type="button" onClick={handleAddMissingDocs} disabled={addingDocs}>
+                    {addingDocs ? 'Uploading…' : 'Add Documents'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {findings.length > 0 && (
               <div className="audit-line-items">
                 <h3>Findings</h3>
@@ -297,6 +405,38 @@ function AuditModal({ audit, claims, onClose, onDone }) {
                     </div>
                   )}
                 </div>
+
+                {findings.some((f) => f.review_status === 'accepted') && (
+                  <div className="audit-review">
+                    <button type="button" onClick={handleDraftEmail} disabled={draftingEmail}>
+                      {draftingEmail ? 'Drafting…' : 'Draft Justification Email'}
+                    </button>
+                    <p className="form-hint">
+                      Drafts from accepted findings only, citing the Knowledge Base where relevant.
+                      This is a draft only — review and send it yourself, nothing is sent
+                      automatically.
+                    </p>
+
+                    {emailDraft && (
+                      <div className="email-draft">
+                        <label>
+                          Subject
+                          <input type="text" value={emailDraft.subject} readOnly />
+                        </label>
+                        <label>
+                          Body
+                          <textarea value={emailDraft.body} readOnly rows={14} />
+                        </label>
+                        <div className="form-actions">
+                          <button type="button" onClick={handleCopyEmail}>
+                            Copy to Clipboard
+                          </button>
+                          {copyStatus && <span>{copyStatus}</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

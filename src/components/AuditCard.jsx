@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { statusClassName } from '../lib/auditStages'
+import { statusClassName, missingDocuments } from '../lib/auditStages'
 import { runAudit } from '../lib/queries'
 
 function money(value) {
@@ -36,7 +36,15 @@ function AuditCard({ audit, onClick, onRun }) {
       <div className="kanban-card-row">{claim?.contractor?.name}</div>
       {claim?.carrier && <div className="kanban-card-row">{claim.carrier}</div>}
 
-      {audit.status === 'queued' && <div className="kanban-card-row">Waiting to run</div>}
+      {audit.status === 'queued' &&
+        (() => {
+          const missing = missingDocuments(audit)
+          return missing.length > 0 ? (
+            <div className="kanban-card-row audit-card-missing">Missing: {missing.join(', ')}</div>
+          ) : (
+            <div className="kanban-card-row">Waiting to run</div>
+          )
+        })()}
 
       {audit.status === 'analyzing' && (
         <div className="kanban-card-row">

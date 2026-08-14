@@ -478,6 +478,16 @@ export async function createAudit(audit) {
   return data
 }
 
+// Fills in whichever of the three document paths an audit was
+// missing (e.g. a contractor's follow-up email supplied the
+// measurement report after the portal submission only had the
+// estimate) - only overwrites fields actually passed in.
+export async function updateAuditDocuments(auditId, updates) {
+  const { data, error } = await supabase.from('audits').update(updates).eq('id', auditId).select().single()
+  if (error) throw error
+  return data
+}
+
 // audit-run-background.js is a Netlify background function (name suffix is
 // what triggers that) — it can run up to 15 minutes, well past the ~10-26s
 // limit on regular functions that the AI parsing path (a real OCR + LLM
@@ -508,6 +518,20 @@ export async function markAuditReviewed(auditId, reviewedBy) {
     .update({ reviewed_by: reviewedBy })
     .eq('id', auditId)
   if (error) throw error
+}
+
+// Drafts a justification email from an audit's accepted findings,
+// citing the SUPP/KB knowledge base. Returns { subject, body } text -
+// never sent, just a draft for review (see draft-findings-email.js).
+export async function draftFindingsEmail(auditId) {
+  const res = await fetch('/.netlify/functions/draft-findings-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audit_id: auditId }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Could not draft email')
+  return data
 }
 
 export async function createSupplementActivity(entry) {
