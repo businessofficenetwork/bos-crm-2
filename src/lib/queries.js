@@ -473,7 +473,7 @@ export async function listAudits() {
   const { data, error } = await supabase
     .from('audits')
     .select(
-      '*, claim:claims(id, property_address, claim_number, carrier, contractor:contractors(name))'
+      '*, claim:claims(id, property_address, claim_number, carrier, contractor:contractors(id, name))'
     )
     .order('created_at', { ascending: false })
 

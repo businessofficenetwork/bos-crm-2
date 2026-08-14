@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { statusClassName, missingDocuments } from '../lib/auditStages'
 import { runAudit } from '../lib/queries'
+import { contractorColor } from '../lib/contractorColor'
 
 function money(value) {
   return value === null || value === undefined ? '' : `$${Number(value).toLocaleString()}`
@@ -31,6 +32,13 @@ function AuditCard({ audit, onClick, onRun }) {
       tabIndex={0}
     >
       <div className="kanban-card-title">
+        {claim?.contractor?.id && (
+          <span
+            className="kanban-card-contractor-dot"
+            style={{ background: contractorColor(claim.contractor.id) }}
+            title={claim.contractor.name}
+          />
+        )}
         {claim?.property_address || claim?.claim_number || 'Untitled claim'}
       </div>
       <div className="kanban-card-row">{claim?.contractor?.name}</div>

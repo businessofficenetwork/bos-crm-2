@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AUDIT_STATUS_LABELS, missingDocuments } from '../lib/auditStages'
+import { contractorColor } from '../lib/contractorColor'
 import {
   uploadAuditPdf,
   uploadAuditPhotos,
@@ -268,7 +269,14 @@ function AuditModal({ audit, claims, onClose, onDone }) {
           </form>
         ) : (
           <div className="detail-view">
-            <div className="detail-header">
+            <div
+              className="detail-header"
+              style={
+                audit.claim?.contractor?.id
+                  ? { borderLeft: `4px solid ${contractorColor(audit.claim.contractor.id)}`, paddingLeft: '0.6rem' }
+                  : undefined
+              }
+            >
               <h3>{audit.claim?.property_address || audit.claim?.claim_number || 'Audit'}</h3>
               <div className="form-actions">
                 <button
