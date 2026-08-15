@@ -43,10 +43,14 @@ function Topbar({ session, onSignOut }) {
 
   return (
     <div className="topbar">
-      <span className="topbar-user">{session.name}</span>
-      <button type="button" className="topbar-signout" onClick={handleSignOut}>
-        Sign Out
-      </button>
+      {session && (
+        <>
+          <span className="topbar-user">{session.name}</span>
+          <button type="button" className="topbar-signout" onClick={handleSignOut}>
+            Sign Out
+          </button>
+        </>
+      )}
       <PortalNotifications />
       <NotificationDropdown
         icon="🔔"
