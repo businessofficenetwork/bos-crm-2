@@ -56,31 +56,42 @@ async function parseWithClaude(pdfBuffer) {
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const message = await anthropic.messages.create({
-    model: 'claude-opus-5',
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    output_config: {
-      effort: 'high',
-      format: { type: 'json_schema', schema: LINE_ITEM_SCHEMA },
-    },
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: pdfBuffer.toString('base64'),
-            },
-          },
-          { type: 'text', text: 'Extract every line item from this estimate document.' },
-        ],
+  let message
+  try {
+    message = await anthropic.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      output_config: {
+        effort: 'high',
+        format: { type: 'json_schema', schema: LINE_ITEM_SCHEMA },
       },
-    ],
-  })
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: pdfBuffer.toString('base64'),
+              },
+            },
+            { type: 'text', text: 'Extract every line item from this estimate document.' },
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    // Anthropic's own message for this case is accurate but easy to miss
+    // buried in a JSON error blob on a kanban card - surfacing it as its
+    // own clearly-labeled case so it reads as an action item, not a bug.
+    if (err.message && err.message.includes('credit balance is too low')) {
+      throw new Error('Needs Anthropic credits — add funds at console.anthropic.com, then Run again.')
+    }
+    throw err
+  }
 
   if (message.stop_reason === 'refusal') {
     throw new Error('Claude declined to process this document')

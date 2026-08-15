@@ -239,9 +239,15 @@ export const handler = async function (event) {
       const { parseWithClaude } = await import('./lib/aiParse.js')
       items = await parseWithClaude(pdfBuffer)
     } catch (aiErr) {
+      // aiParse.js already rewrites the credit-balance case into a plain
+      // action item ("Needs Anthropic credits...") - don't bury that
+      // under a generic "AI parsing failed" prefix, but keep the prefix
+      // for genuinely unexpected errors so they're still clearly AI-path
+      // failures and not something else.
+      const message = aiErr.message || String(aiErr)
       await setAuditStatus(supabase, auditId, {
         status: 'manual_review',
-        error_detail: `AI parsing failed: ${aiErr.message || aiErr}`,
+        error_detail: message.startsWith('Needs Anthropic credits') ? message : `AI parsing failed: ${message}`,
       })
       return { statusCode: 200, body: JSON.stringify({ status: 'manual_review' }) }
     }
