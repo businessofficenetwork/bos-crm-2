@@ -13,8 +13,10 @@
 # names. All four are meant to be public (Supabase URL + anon key,
 # protected by Row Level Security, not secrecy) - never add
 # SUPABASE_SERVICE_ROLE_KEY here, that one is a real secret.
+# NOTIFY_EMAIL is BON's own support address, intentionally shown to
+# contractors as contact info on portal.html - also not a secret.
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL,SUPABASE_ANON_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL,SUPABASE_ANON_KEY,NOTIFY_EMAIL"
 
 [[redirects]]
   from = "/*"
