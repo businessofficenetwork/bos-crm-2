@@ -106,6 +106,17 @@
   border-radius: 6px;
 }
 
+.manual-entry-table input {
+  width: 100%;
+  min-width: 60px;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.85rem;
+}
+
+.manual-entry-table td:nth-child(2) input {
+  min-width: 200px;
+}
+
 .finding-status {
   font-size: 0.75rem;
   font-weight: 600;

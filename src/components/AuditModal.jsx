@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AUDIT_STATUS_LABELS, missingDocuments } from '../lib/auditStages'
 import { contractorColor } from '../lib/contractorColor'
 import { getSession } from '../lib/auth'
+import ManualLineItemEntry from './ManualLineItemEntry'
 import {
   uploadAuditPdf,
   uploadAuditPhotos,
@@ -317,6 +318,10 @@ function AuditModal({ audit, claims, onClose, onDone }) {
 
             {error && <p className="form-error">{error}</p>}
             {audit.error_detail && <p className="form-error">{audit.error_detail}</p>}
+
+            {(audit.status === 'manual_review' || audit.status === 'failed') && (
+              <ManualLineItemEntry auditId={audit.id} onSaved={onDone} />
+            )}
 
             {audit.status === 'queued' && missingDocuments(audit).length > 0 && (
               <div className="audit-review">

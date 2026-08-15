@@ -98,16 +98,24 @@ export async function runFindingsRulePass({ rules, parsedEstimate, measurementRe
     })
   }
 
-  const message = await anthropic.messages.create({
-    model: 'claude-opus-5',
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    output_config: {
-      effort: 'high',
-      format: { type: 'json_schema', schema: FINDINGS_SCHEMA },
-    },
-    messages: [{ role: 'user', content }],
-  })
+  let message
+  try {
+    message = await anthropic.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      output_config: {
+        effort: 'high',
+        format: { type: 'json_schema', schema: FINDINGS_SCHEMA },
+      },
+      messages: [{ role: 'user', content }],
+    })
+  } catch (err) {
+    if (err.message && err.message.includes('credit balance is too low')) {
+      throw new Error('Needs Anthropic credits — add funds at console.anthropic.com, then Run again.')
+    }
+    throw err
+  }
 
   if (message.stop_reason === 'refusal') {
     throw new Error('Claude declined to process this audit')

@@ -544,6 +544,18 @@ export async function runAudit(auditId) {
   if (!res.ok) throw new Error('Audit run failed to start')
 }
 
+// Same fire-and-forget shape as runAudit - AuditBoard's own polling
+// picks up the eventual status change (findings_ready if the rule
+// pass ran, back to manual_review with an error_detail if it couldn't).
+export async function submitManualLineItems(auditId, lineItems) {
+  const res = await fetch('/.netlify/functions/audit-manual-entry-background', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audit_id: auditId, line_items: lineItems }),
+  })
+  if (!res.ok) throw new Error('Could not save line items')
+}
+
 // findings is the whole array, rewritten with one entry's review_status
 // changed — jsonb has no per-element update, so the caller sends the
 // full array back. Used by the accept/reject toggles in AuditModal.
