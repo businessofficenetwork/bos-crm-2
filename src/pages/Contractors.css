@@ -155,6 +155,20 @@
   .form-row label {
     flex: 1 1 140px;
   }
+
+  /* Page headers (title + Export CSV / Add X buttons) were cramming
+     everything into one row with no room to breathe - some pages
+     (Jobs: 3 buttons) came within single-digit pixels of actually
+     overflowing. Buttons drop to their own row below the title
+     instead. */
+  .contractors-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
 }
 
 .detail-row dt {
