@@ -137,10 +137,23 @@
 }
 
 /* Two ~140px columns on a phone-width modal squeezes an address into
-   an unreadable wrap - one full-width column instead. */
+   an unreadable wrap - one full-width column instead. Same reasoning
+   extends to .form-row: plain (non-.wrap) rows never wrapped, so
+   side-by-side fields (ClaimForm, ContractorForm, LeadForm,
+   SupplementForm all use this) got squeezed on mobile the same way -
+   forcing wrap here doesn't change desktop, where there's already
+   room and this rule never applies. */
 @media (max-width: 768px) {
   .detail-fields {
     grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    flex-wrap: wrap;
+  }
+
+  .form-row label {
+    flex: 1 1 140px;
   }
 }
 
