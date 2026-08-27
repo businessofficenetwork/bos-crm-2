@@ -170,6 +170,67 @@
   border-right: 1px solid var(--dark4);
 }
 
+.nav-toggle {
+  display: none;
+}
+
+/* Below this width the sidebar can't coexist with real content (see
+   the mobile audit that prompted this) - it becomes a slide-in drawer
+   instead, triggered by a hamburger button, closed by its own ✕, the
+   backdrop, or navigating to a new page (Nav.jsx closes it on route
+   change). */
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0.6rem;
+    left: 1rem;
+    width: 2.4rem;
+    height: 2.4rem;
+    background: var(--dark3);
+    border: 1px solid var(--dark4);
+    border-radius: 6px;
+    color: var(--light);
+    font-size: 1.2rem;
+    z-index: 210;
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 190;
+  }
+
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.5);
+    padding-top: 4rem;
+  }
+
+  .nav.nav-open {
+    transform: translateX(0);
+  }
+
+  /* Room for the fixed hamburger button so it doesn't sit on top of
+     the topbar's own leftmost content (user name, sign out). */
+  .topbar {
+    padding-left: 3.6rem;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}
+
 .nav a {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
