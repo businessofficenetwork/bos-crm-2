@@ -229,6 +229,18 @@
   .content {
     padding: 1rem;
   }
+
+  /* Fixed 320px + right:0 anchored to whichever icon triggered it
+     ran the dropdown off the left edge of a narrow screen - pinning
+     it to the viewport instead of the trigger button avoids that
+     regardless of which icon (bell, #) opened it. */
+  .notif-dropdown {
+    position: fixed;
+    top: 3.8rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
 }
 
 .nav a {
