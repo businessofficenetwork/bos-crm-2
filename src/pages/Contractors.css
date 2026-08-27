@@ -136,6 +136,14 @@
   margin: 0;
 }
 
+/* Two ~140px columns on a phone-width modal squeezes an address into
+   an unreadable wrap - one full-width column instead. */
+@media (max-width: 768px) {
+  .detail-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .detail-row dt {
   color: var(--light-dim);
   font-size: 0.8rem;
