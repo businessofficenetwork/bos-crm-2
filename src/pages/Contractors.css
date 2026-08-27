@@ -17,7 +17,15 @@
   margin-bottom: 1rem;
 }
 
+/* display:block + overflow-x:auto lets a too-wide table scroll
+   horizontally within itself on narrow screens, instead of either
+   overflowing off the edge of the page or being force-squeezed
+   unreadably thin - thead/tbody/tr keep their normal table display
+   values, so column alignment is unaffected. Same pattern already
+   used for the audit tables (.audit-table-wrap). */
 .contractors-table {
+  display: block;
+  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
 }
