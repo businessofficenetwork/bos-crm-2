@@ -40,6 +40,7 @@ function Nav({ isAdmin }) {
         <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/leads">Leads</NavLink>
         <NavLink to="/audits">Scope Audit</NavLink>
+        <NavLink to="/supplement-guide">Supplement Guide</NavLink>
         <a href="https://bosknowledge.netlify.app/" target="_blank" rel="noopener noreferrer">
           Knowledge Base ↗
         </a>
