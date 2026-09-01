@@ -153,6 +153,18 @@ export async function updateSupplement(id, updates) {
   return data
 }
 
+export async function updateSupplementChecklistProgress(id, checklistProgress) {
+  const { data, error } = await supabase
+    .from('supplements')
+    .update({ checklist_progress: checklistProgress, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('checklist_progress')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 // All supplements for a contractor's claims, active and closed alike -
 // the Contractor detail view splits them into the Supplements/Results
 // tabs client-side rather than two separate queries.

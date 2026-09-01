@@ -270,6 +270,34 @@ export const CHECKLISTS = [
   },
 ]
 
+// Checklists that belong to one specific supplement, in the order they
+// come up while working a file. Excludes the four Daily Workflow
+// checklists (Morning / New Files / Active Supplements / End of Day) -
+// those are a specialist's personal daily routine, not tied to one claim.
+export const PER_SUPPLEMENT_CHECKLIST_IDS = [
+  'intake-documents',
+  'claim-basics-questions',
+  'estimate-review-checklist',
+  'line-item-review-questions',
+  'photo-verification',
+  'quantities-to-verify',
+  'code-requirement-checklist',
+  'manufacturer-requirements-checklist',
+  'detach-reset-checklist',
+  'access-labor-difficulty-checklist',
+  'pricing-review-checklist',
+  'xactimate-quality-checklist',
+  'submission-claim-info',
+  'submission-scope',
+  'submission-package',
+  'five-questions',
+  'qa-scope',
+  'qa-estimate',
+  'qa-documentation',
+  'qa-submission',
+  'closeout-checklist',
+]
+
 const checklistTitle = (id) => CHECKLISTS.find((c) => c.id === id)?.title || id
 
 export const GUIDE_SECTIONS = [
@@ -859,4 +887,10 @@ GUIDE_SECTIONS.forEach((section) => {
       throw new Error(`Unknown checklist ref "${block.ref}" in section "${section.id}"`)
     }
   })
+})
+
+PER_SUPPLEMENT_CHECKLIST_IDS.forEach((id) => {
+  if (!CHECKLISTS.some((c) => c.id === id)) {
+    throw new Error(`Unknown checklist id "${id}" in PER_SUPPLEMENT_CHECKLIST_IDS`)
+  }
 })

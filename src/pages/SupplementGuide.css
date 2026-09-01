@@ -140,6 +140,26 @@
   margin: 0;
 }
 
+.guide-checklist-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.guide-checklist-toggle:hover h4 {
+  color: var(--gold);
+}
+
+.guide-checklist:has(.guide-checklist-toggle) ul {
+  margin-top: 0.5rem;
+}
+
 .guide-checklist-progress {
   color: var(--light-dim);
   font-size: 0.85rem;

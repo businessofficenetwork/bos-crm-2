@@ -3,6 +3,7 @@ import DetailView from './DetailView'
 import SupplementForm from './SupplementForm'
 import ActionsPanel from './ActionsPanel'
 import RequestedItemsChecklist from './RequestedItemsChecklist'
+import SupplementChecklists from './SupplementChecklists'
 import SupplementActivityLog from './SupplementActivityLog'
 import { COMPLEXITY_LABELS } from '../lib/stages'
 import { contractorColor } from '../lib/contractorColor'
@@ -118,6 +119,10 @@ function SupplementModal({ supplement, claims, onClose, onSave }) {
         {!isNew && (
           <>
             <RequestedItemsChecklist supplementId={supplement.id} />
+            <SupplementChecklists
+              supplementId={supplement.id}
+              initialProgress={supplement.checklist_progress}
+            />
             <SupplementActivityLog supplementId={supplement.id} />
             <ActionsPanel supplementId={supplement.id} />
           </>
