@@ -355,3 +355,52 @@
   gap: 0.2rem;
   font-size: 0.9rem;
 }
+
+.trade-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+
+.trade-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  color: var(--light);
+  text-transform: capitalize;
+}
+
+.op-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.op-badge-qualifies {
+  background: rgba(74, 156, 109, 0.18);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.op-badge-does-not-qualify {
+  background: rgba(192, 57, 43, 0.18);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
+.op-badge-overridden {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.op-badge-none {
+  background: var(--dark4);
+  color: var(--light-dim);
+  border: 1px solid var(--dark4);
+}
