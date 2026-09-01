@@ -3,15 +3,18 @@ import { useSearchParams } from 'react-router-dom'
 import ClaimForm from '../components/ClaimForm'
 import DetailView from '../components/DetailView'
 import JobComments from '../components/JobComments'
+import OpBadge from '../components/OpBadge'
 import {
   listClaims,
   createClaim,
   createClaimWithIntake,
   updateClaim,
   listContractors,
+  listOpThresholdRules,
 } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { contractorColor } from '../lib/contractorColor'
+import { matchOpRule, computeOpQualifies, getOpDisplayStatus } from '../lib/opThreshold'
 import './Contractors.css'
 
 function money(value) {
@@ -34,19 +37,39 @@ function estimateValue(claim) {
   return values.length ? Math.max(...values) : null
 }
 
-function claimFields(c) {
+function claimFields(c, rules) {
   return [
     { label: 'Contractor', value: c.contractor?.name },
     { label: 'Property Address', value: c.property_address },
     { label: 'Homeowner Name', value: c.homeowner_name },
     { label: 'Carrier', value: c.carrier },
     { label: 'Claim #', value: c.claim_number },
+    { label: 'State', value: c.state },
     { label: 'Adjuster Name', value: c.adjuster_name },
     { label: 'Adjuster Contact', value: c.adjuster_contact },
     { label: 'Date of Loss', value: c.date_of_loss },
+    { label: 'Trades Involved', value: (c.trades_involved || []).join(', ') },
+    { label: 'O&P Status', value: <OpBadge claim={c} rules={rules} /> },
+    { label: 'O&P Notes', value: c.op_notes },
     { label: 'Notes', value: c.notes },
     { label: 'Created At', value: c.created_at },
   ]
+}
+
+const OP_FILTER_OPTIONS = [
+  { value: '', label: 'All O&P Statuses' },
+  { value: 'qualifies', label: 'O&P Qualifies' },
+  { value: 'does_not_qualify', label: 'O&P Does Not Qualify' },
+  { value: 'overridden', label: 'Manually Overridden' },
+]
+
+function opFilterKey(claim, rules) {
+  const rule = matchOpRule(rules || [], { carrierName: claim.carrier, state: claim.state })
+  const status = getOpDisplayStatus({ tradesInvolved: claim.trades_involved, opOverride: claim.op_override, rule })
+  if (status.overridden) return 'overridden'
+  if (status.displayQualifies === true) return 'qualifies'
+  if (status.displayQualifies === false) return 'does_not_qualify'
+  return ''
 }
 
 const CSV_COLUMNS = [
@@ -55,10 +78,13 @@ const CSV_COLUMNS = [
   { key: 'homeowner_name', label: 'Homeowner Name' },
   { key: 'carrier', label: 'Carrier' },
   { key: 'claim_number', label: 'Claim #' },
+  { key: 'state', label: 'State' },
   { key: 'adjuster_name', label: 'Adjuster Name' },
   { key: 'adjuster_contact', label: 'Adjuster Contact' },
   { key: 'date_of_loss', label: 'Date of Loss' },
   { key: 'estimate_value', label: 'Estimate Value', get: (row) => estimateValue(row) },
+  { key: 'trades_involved', label: 'Trades Involved', get: (row) => (row.trades_involved || []).join(', ') },
+  { key: 'op_qualifies', label: 'O&P Qualifies', get: (row) => (row.op_override ?? row.op_qualifies) },
   { key: 'notes', label: 'Notes' },
   { key: 'created_at', label: 'Created At' },
 ]
@@ -66,9 +92,12 @@ const CSV_COLUMNS = [
 function Jobs() {
   const [claims, setClaims] = useState([])
   const [contractors, setContractors] = useState([])
+  const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [opFilter, setOpFilter] = useState('')
+  const [opSort, setOpSort] = useState('') // '', 'asc', 'desc'
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
   const [searchParams, setSearchParams] = useSearchParams()
@@ -99,6 +128,12 @@ function Jobs() {
   useEffect(() => {
     refresh('')
     listContractors().then(setContractors).catch((err) => setError(err.message))
+    // O&P rules are a supplementary feature - if the table isn't there yet
+    // (e.g. migration not applied), the claims list should still work,
+    // just with badges showing "No Rule" instead of a computed status.
+    listOpThresholdRules()
+      .then(setRules)
+      .catch((err) => console.error('Could not load O&P threshold rules:', err.message))
   }, [])
 
   function handleSearchChange(e) {
@@ -108,12 +143,14 @@ function Jobs() {
   }
 
   async function handleSubmit(form) {
+    const rule = matchOpRule(rules, { carrierName: form.carrier, state: form.state })
+    const payload = { ...form, op_qualifies: computeOpQualifies(form.trades_involved, rule) }
     if (editing.id) {
-      await updateClaim(editing.id, form)
+      await updateClaim(editing.id, payload)
     } else if (editing.__intake) {
-      await createClaimWithIntake(form)
+      await createClaimWithIntake(payload)
     } else {
-      await createClaim(form)
+      await createClaim(payload)
     }
     setEditing(null)
     setViewing(null)
@@ -123,6 +160,19 @@ function Jobs() {
   function handleExport() {
     downloadCsv('jobs.csv', toCsv(claims, CSV_COLUMNS))
   }
+
+  function toggleOpSort() {
+    setOpSort((s) => (s === '' ? 'asc' : s === 'asc' ? 'desc' : ''))
+  }
+
+  const displayedClaims = claims
+    .filter((c) => !opFilter || opFilterKey(c, rules) === opFilter)
+    .sort((a, b) => {
+      if (!opSort) return 0
+      const av = opFilterKey(a, rules) === 'qualifies' ? 1 : 0
+      const bv = opFilterKey(b, rules) === 'qualifies' ? 1 : 0
+      return opSort === 'asc' ? av - bv : bv - av
+    })
 
   return (
     <div>
@@ -155,18 +205,27 @@ function Jobs() {
         <p>Add a contractor before creating a job.</p>
       )}
 
-      <input
-        className="contractors-search"
-        type="search"
-        placeholder="Search by address, homeowner, or claim #…"
-        value={search}
-        onChange={handleSearchChange}
-      />
+      <div className="form-row wrap">
+        <input
+          className="contractors-search"
+          type="search"
+          placeholder="Search by address, homeowner, or claim #…"
+          value={search}
+          onChange={handleSearchChange}
+        />
+        <select value={opFilter} onChange={(e) => setOpFilter(e.target.value)}>
+          {OP_FILTER_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {viewing && !editing && (
         <DetailView
           title={viewing.property_address || viewing.claim_number || 'Job'}
-          fields={claimFields(viewing)}
+          fields={claimFields(viewing, rules)}
           headerColor={contractorColor(viewing.contractor?.id)}
           onEdit={() => {
             setEditing(viewing)
@@ -207,10 +266,13 @@ function Jobs() {
               <th>Adjuster</th>
               <th>Date of Loss</th>
               <th>Estimate Value</th>
+              <th className="row-link" onClick={toggleOpSort} style={{ cursor: 'pointer' }}>
+                O&amp;P{opSort === 'asc' ? ' ▲' : opSort === 'desc' ? ' ▼' : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {claims.map((c) => (
+            {displayedClaims.map((c) => (
               <tr key={c.id}>
                 <td>{c.contractor?.name}</td>
                 <td>
@@ -224,11 +286,14 @@ function Jobs() {
                 <td>{c.adjuster_name}</td>
                 <td>{c.date_of_loss}</td>
                 <td>{money(estimateValue(c))}</td>
+                <td>
+                  <OpBadge claim={c} rules={rules} />
+                </td>
               </tr>
             ))}
-            {claims.length === 0 && (
+            {displayedClaims.length === 0 && (
               <tr>
-                <td colSpan={8}>No jobs found.</td>
+                <td colSpan={9}>No jobs found.</td>
               </tr>
             )}
           </tbody>

@@ -81,6 +81,39 @@ export async function updateClaim(id, updates) {
   return data
 }
 
+export async function listOpThresholdRules() {
+  const { data, error } = await supabase
+    .from('op_threshold_rules')
+    .select('*')
+    .order('carrier_name', { ascending: true, nullsFirst: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createOpThresholdRule(rule) {
+  const { data, error } = await supabase
+    .from('op_threshold_rules')
+    .insert(rule)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateOpThresholdRule(id, updates) {
+  const { data, error } = await supabase
+    .from('op_threshold_rules')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function listSupplements(search = '') {
   let query = supabase
     .from('supplements')
