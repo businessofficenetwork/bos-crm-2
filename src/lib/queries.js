@@ -665,3 +665,42 @@ export async function createSupplementActivity(entry) {
   if (error) throw error
   return data
 }
+
+export async function listKbCategories() {
+  const { data, error } = await supabase
+    .from('kb_categories')
+    .select('*, entries:kb_entries(id, title, tags)')
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function getKbEntry(id) {
+  const { data, error } = await supabase.from('kb_entries').select('*').eq('id', id).single()
+  if (error) throw error
+  return data
+}
+
+export async function createKbEntry(entry) {
+  const { data, error } = await supabase.from('kb_entries').insert(entry).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateKbEntry(id, updates) {
+  const { data, error } = await supabase
+    .from('kb_entries')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteKbEntry(id) {
+  const { error } = await supabase.from('kb_entries').delete().eq('id', id)
+  if (error) throw error
+}

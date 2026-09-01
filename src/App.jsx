@@ -9,6 +9,7 @@ import Pipeline from './pages/Pipeline'
 import Leads from './pages/Leads'
 import Audits from './pages/Audits'
 import SupplementGuide from './pages/SupplementGuide'
+import KnowledgeBase from './pages/KnowledgeBase'
 import Settings from './pages/Settings'
 import { getSession } from './lib/auth'
 import './App.css'
@@ -37,6 +38,7 @@ function App() {
               <Route path="/leads" element={<Leads />} />
               <Route path="/audits" element={<Audits />} />
               <Route path="/supplement-guide" element={<SupplementGuide />} />
+              <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
