@@ -4,6 +4,7 @@ import ClaimForm from '../components/ClaimForm'
 import DetailView from '../components/DetailView'
 import JobComments from '../components/JobComments'
 import OpBadge from '../components/OpBadge'
+import SolBadge from '../components/SolBadge'
 import {
   listClaims,
   createClaim,
@@ -11,10 +12,12 @@ import {
   updateClaim,
   listContractors,
   listOpThresholdRules,
+  listSolRules,
 } from '../lib/queries'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { contractorColor } from '../lib/contractorColor'
 import { matchOpRule, computeOpQualifies, getOpDisplayStatus } from '../lib/opThreshold'
+import { matchSolRule, computeSolDeadline, computeSolStatus } from '../lib/statuteOfLimitations'
 import './Contractors.css'
 
 function money(value) {
@@ -37,7 +40,7 @@ function estimateValue(claim) {
   return values.length ? Math.max(...values) : null
 }
 
-function claimFields(c, rules) {
+function claimFields(c, rules, solRules) {
   return [
     { label: 'Contractor', value: c.contractor?.name },
     { label: 'Property Address', value: c.property_address },
@@ -48,6 +51,7 @@ function claimFields(c, rules) {
     { label: 'Adjuster Name', value: c.adjuster_name },
     { label: 'Adjuster Contact', value: c.adjuster_contact },
     { label: 'Date of Loss', value: c.date_of_loss },
+    { label: 'Statute of Limitations', value: <SolBadge claim={c} rules={solRules} /> },
     { label: 'Trades Involved', value: (c.trades_involved || []).join(', ') },
     { label: 'O&P Status', value: <OpBadge claim={c} rules={rules} /> },
     { label: 'O&P Notes', value: c.op_notes },
@@ -93,6 +97,7 @@ function Jobs() {
   const [claims, setClaims] = useState([])
   const [contractors, setContractors] = useState([])
   const [rules, setRules] = useState([])
+  const [solRules, setSolRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
@@ -134,6 +139,11 @@ function Jobs() {
     listOpThresholdRules()
       .then(setRules)
       .catch((err) => console.error('Could not load O&P threshold rules:', err.message))
+    // Same reasoning as O&P rules above - SOL is supplementary, a missing
+    // table shouldn't take down the claims list.
+    listSolRules()
+      .then(setSolRules)
+      .catch((err) => console.error('Could not load SOL rules:', err.message))
   }, [])
 
   function handleSearchChange(e) {
@@ -144,7 +154,14 @@ function Jobs() {
 
   async function handleSubmit(form) {
     const rule = matchOpRule(rules, { carrierName: form.carrier, state: form.state })
-    const payload = { ...form, op_qualifies: computeOpQualifies(form.trades_involved, rule) }
+    const solRule = matchSolRule(solRules, { state: form.state })
+    const solDeadline = computeSolDeadline(form, solRule)
+    const payload = {
+      ...form,
+      op_qualifies: computeOpQualifies(form.trades_involved, rule),
+      sol_deadline: solDeadline,
+      sol_status: computeSolStatus(solDeadline),
+    }
     if (editing.id) {
       await updateClaim(editing.id, payload)
     } else if (editing.__intake) {
@@ -225,7 +242,7 @@ function Jobs() {
       {viewing && !editing && (
         <DetailView
           title={viewing.property_address || viewing.claim_number || 'Job'}
-          fields={claimFields(viewing, rules)}
+          fields={claimFields(viewing, rules, solRules)}
           headerColor={contractorColor(viewing.contractor?.id)}
           onEdit={() => {
             setEditing(viewing)
@@ -269,6 +286,7 @@ function Jobs() {
               <th className="row-link" onClick={toggleOpSort} style={{ cursor: 'pointer' }}>
                 O&amp;P{opSort === 'asc' ? ' ▲' : opSort === 'desc' ? ' ▼' : ''}
               </th>
+              <th>SOL Deadline</th>
             </tr>
           </thead>
           <tbody>
@@ -289,11 +307,14 @@ function Jobs() {
                 <td>
                   <OpBadge claim={c} rules={rules} />
                 </td>
+                <td>
+                  <SolBadge claim={c} rules={solRules} />
+                </td>
               </tr>
             ))}
             {displayedClaims.length === 0 && (
               <tr>
-                <td colSpan={9}>No jobs found.</td>
+                <td colSpan={10}>No jobs found.</td>
               </tr>
             )}
           </tbody>

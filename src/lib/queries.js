@@ -114,6 +114,39 @@ export async function updateOpThresholdRule(id, updates) {
   return data
 }
 
+export async function listSolRules() {
+  const { data, error } = await supabase
+    .from('statute_of_limitations_rules')
+    .select('*')
+    .order('state', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+export async function createSolRule(rule) {
+  const { data, error } = await supabase
+    .from('statute_of_limitations_rules')
+    .insert(rule)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateSolRule(id, updates) {
+  const { data, error } = await supabase
+    .from('statute_of_limitations_rules')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function listSupplements(search = '') {
   let query = supabase
     .from('supplements')
