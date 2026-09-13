@@ -8,6 +8,7 @@ import {
 } from '../lib/queries'
 import RemindersPanel from '../components/RemindersPanel'
 import DashboardStats from '../components/DashboardStats'
+import DeadlinesWidget from '../components/DeadlinesWidget'
 import './Contractors.css'
 import './Dashboard.css'
 
@@ -83,6 +84,8 @@ function Dashboard() {
           <DashboardStats stats={stats} />
 
           <RemindersPanel />
+
+          <DeadlinesWidget />
 
           <h2>Pipeline</h2>
           <table className="contractors-table">

@@ -147,6 +147,22 @@ export async function updateSolRule(id, updates) {
   return data
 }
 
+// Deadline is computed live from these fields (see statuteOfLimitations.js)
+// rather than trusting the cached sol_status column, which only updates
+// when a claim is saved and would otherwise go stale as today's date moves
+// forward. Only claims with both state and date_of_loss set can produce a
+// deadline, so those are the only ones worth fetching here.
+export async function listClaimsWithDeadlines() {
+  const { data, error } = await supabase
+    .from('claims')
+    .select('id, property_address, claim_number, state, date_of_loss, contractor:contractors(id, name)')
+    .not('state', 'is', null)
+    .not('date_of_loss', 'is', null)
+
+  if (error) throw error
+  return data
+}
+
 export async function listSupplements(search = '') {
   let query = supabase
     .from('supplements')
