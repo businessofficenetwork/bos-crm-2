@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import { callUsersApi } from '../lib/auth'
-import { listOpThresholdRules, createOpThresholdRule, updateOpThresholdRule } from '../lib/queries'
+import {
+  listOpThresholdRules,
+  createOpThresholdRule,
+  updateOpThresholdRule,
+  listSolRules,
+  createSolRule,
+  updateSolRule,
+} from '../lib/queries'
 import '../pages/Contractors.css'
 
 function formatDate(value) {
@@ -156,6 +163,221 @@ function OpRulesSettings() {
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             rows={2}
           />
+        </label>
+        <div className="form-actions">
+          <button type="submit" disabled={saving}>
+            {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Rule'}
+          </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit} disabled={saving}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  )
+}
+
+const emptySolRule = {
+  state: '',
+  claim_type: 'first-party property',
+  deadline_months: 24,
+  trigger_event: 'date_of_loss',
+  source_note: '',
+  verified: false,
+}
+
+function SolRulesSettings() {
+  const [rules, setRules] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [form, setForm] = useState(emptySolRule)
+  const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+
+  async function refresh() {
+    setLoading(true)
+    setError(null)
+    try {
+      setRules(await listSolRules())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+  }, [])
+
+  function startEdit(rule) {
+    setEditingId(rule.id)
+    setForm({
+      state: rule.state || '',
+      claim_type: rule.claim_type || '',
+      deadline_months: rule.deadline_months,
+      trigger_event: rule.trigger_event || 'date_of_loss',
+      source_note: rule.source_note || '',
+      verified: rule.verified,
+    })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(emptySolRule)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = {
+        state: form.state.trim().toUpperCase().slice(0, 2),
+        claim_type: form.claim_type.trim() || null,
+        deadline_months: Number(form.deadline_months) || 1,
+        trigger_event: form.trigger_event.trim() || 'date_of_loss',
+        source_note: form.source_note.trim(),
+        verified: form.verified,
+      }
+      if (editingId) {
+        await updateSolRule(editingId, payload)
+      } else {
+        await createSolRule(payload)
+      }
+      cancelEdit()
+      await refresh()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const unverifiedCount = rules.filter((r) => !r.verified).length
+
+  return (
+    <div>
+      <h3>Statute of Limitations Rules</h3>
+      <p>
+        Drives the filing-deadline countdown on each claim: deadline ={' '}
+        <code>trigger_event</code> date + <code>deadline_months</code>. Only{' '}
+        <code>date_of_loss</code> is wired up as a trigger event today.
+      </p>
+
+      {unverifiedCount > 0 && (
+        <div className="sol-warning-banner">
+          <strong>⚠</strong>
+          <span>
+            {unverifiedCount} rule{unverifiedCount === 1 ? ' is' : 's are'} still unverified
+            (placeholder numbers, not confirmed with an attorney or the state insurance code).
+            Every deadline computed from an unverified rule shows a warning badge — do not treat
+            those countdowns as legally reliable until they're marked verified below.
+          </span>
+        </div>
+      )}
+
+      {error && <p className="form-error">{error}</p>}
+      {loading ? (
+        <p>Loading…</p>
+      ) : (
+        <table className="contractors-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Claim Type</th>
+              <th>Deadline (months)</th>
+              <th>Trigger Event</th>
+              <th>Source</th>
+              <th>Verified</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((r) => (
+              <tr key={r.id}>
+                <td>{r.state}</td>
+                <td>{r.claim_type}</td>
+                <td>{r.deadline_months}</td>
+                <td>{r.trigger_event}</td>
+                <td>{r.source_note}</td>
+                <td>{r.verified ? '✓ Verified' : '⚠ Unverified'}</td>
+                <td>
+                  <button type="button" onClick={() => startEdit(r)}>
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {rules.length === 0 && (
+              <tr>
+                <td colSpan={7}>No rules yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
+
+      <h3>{editingId ? 'Edit Rule' : 'Add a Rule'}</h3>
+      <form className="contractor-form" onSubmit={handleSubmit}>
+        <div className="form-row wrap">
+          <label>
+            State
+            <input
+              type="text"
+              maxLength={2}
+              value={form.state}
+              onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+              required
+            />
+          </label>
+          <label>
+            Claim type
+            <input
+              type="text"
+              value={form.claim_type}
+              onChange={(e) => setForm((f) => ({ ...f, claim_type: e.target.value }))}
+            />
+          </label>
+          <label>
+            Deadline (months from trigger)
+            <input
+              type="number"
+              min={1}
+              value={form.deadline_months}
+              onChange={(e) => setForm((f) => ({ ...f, deadline_months: e.target.value }))}
+              required
+            />
+          </label>
+          <label>
+            Trigger event
+            <select
+              value={form.trigger_event}
+              onChange={(e) => setForm((f) => ({ ...f, trigger_event: e.target.value }))}
+            >
+              <option value="date_of_loss">Date of loss</option>
+              <option value="date_of_denial">Date of denial (not wired up yet)</option>
+            </select>
+          </label>
+        </div>
+        <label className="form-notes">
+          Source (citation / where this number came from — required)
+          <textarea
+            value={form.source_note}
+            onChange={(e) => setForm((f) => ({ ...f, source_note: e.target.value }))}
+            rows={2}
+            required
+          />
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={form.verified}
+            onChange={(e) => setForm((f) => ({ ...f, verified: e.target.checked }))}
+          />{' '}
+          Verified with an attorney or the state insurance code
         </label>
         <div className="form-actions">
           <button type="submit" disabled={saving}>
@@ -332,6 +554,7 @@ function Settings() {
       </form>
 
       <OpRulesSettings />
+      <SolRulesSettings />
     </div>
   )
 }
