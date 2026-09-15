@@ -15,7 +15,21 @@ async function loadPdfParse() {
     if (typeof globalThis.DOMMatrix === 'undefined') {
       globalThis.DOMMatrix = class DOMMatrix {}
     }
-    ;({ PDFParse } = await import('pdf-parse'))
+    const path = await import('path')
+    const url = await import('url')
+
+    // pdf-parse's package.json "exports" map sends a dynamic import()
+    // to its ESM build (dist/pdf-parse/esm/index.js), which internally
+    // does a synchronous require() on pdfjs-dist's .mjs file - invalid,
+    // and it crashes in Netlify's Lambda runtime with "require() of ES
+    // Module ... not supported" even though it happened not to surface
+    // locally. require()'ing it instead resolves the "require"
+    // condition (dist/pdf-parse/cjs/index.cjs), which doesn't have this
+    // problem. createRequire needs a base path even though 'pdf-parse'
+    // itself is resolved from node_modules, not relative to it.
+    const { createRequire } = await import('module')
+    const requireFromRoot = createRequire(path.join(process.cwd(), 'package.json'))
+    ;({ PDFParse } = requireFromRoot('pdf-parse'))
 
     // pdf-parse bundles its own internal copy of pdf.js, with its own
     // worker config — separate from the standalone pdfjs-dist package,
@@ -27,8 +41,6 @@ async function loadPdfParse() {
     // isn't reliable here since this file gets transpiled to CJS
     // output, so this uses process.cwd() (the project root under
     // netlify dev) instead of a path relative to this module.
-    const path = await import('path')
-    const url = await import('url')
     const workerPath = path.join(
       process.cwd(),
       'node_modules',
