@@ -41,7 +41,7 @@ export async function updateContractor(id, updates) {
 export async function listClaims(search = '') {
   let query = supabase
     .from('claims')
-    .select('*, contractor:contractors(id, name), audits(parsed_estimate)')
+    .select('*, contractor:contractors(id, name), audits(parsed_estimate), supplements(stage, created_at)')
     .order('created_at', { ascending: false })
 
   const term = search.trim()

@@ -15,6 +15,18 @@ export function stageClassName(stage) {
   return 'stage-' + stage.toLowerCase().replace(/[^a-z]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
+// A job can pick up more than one supplement over time (e.g. a second
+// supplement added later) - the most recently created one is treated as
+// the job's "current" pipeline position, same idea as estimateValue()
+// taking the largest audit value in Jobs.jsx.
+export function currentStage(claim) {
+  const supplements = claim.supplements || []
+  if (supplements.length === 0) return null
+  return supplements.reduce((latest, s) =>
+    !latest || new Date(s.created_at) > new Date(latest.created_at) ? s : latest
+  ).stage
+}
+
 export const COMPLEXITY_LABELS = {
   roof_only: 'Roof Only',
   multiple_trades: 'Multiple Trades',

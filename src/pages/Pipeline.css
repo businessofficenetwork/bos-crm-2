@@ -199,6 +199,50 @@
   border-color: var(--stage-closed);
 }
 
+/* Stage badge (Jobs page): same outline-only treatment, reused outside
+   the kanban board so a job's pipeline position shows without a click
+   through to Pipeline. */
+.stage-badge.stage-intake {
+  border-color: var(--stage-intake);
+  color: var(--stage-intake);
+}
+.stage-badge.stage-docs-received {
+  border-color: var(--stage-docs-received);
+  color: var(--stage-docs-received);
+}
+.stage-badge.stage-reviewed {
+  border-color: var(--stage-reviewed);
+  color: var(--stage-reviewed);
+}
+.stage-badge.stage-supplement-written {
+  border-color: var(--stage-supplement-written);
+  color: var(--stage-supplement-written);
+}
+.stage-badge.stage-submitted {
+  border-color: var(--stage-submitted);
+  color: var(--stage-submitted);
+}
+.stage-badge.stage-carrier-response {
+  border-color: var(--stage-carrier-response);
+  color: var(--stage-carrier-response);
+}
+.stage-badge.stage-approved {
+  border-color: var(--stage-approved);
+  color: var(--stage-approved);
+}
+.stage-badge.stage-paid {
+  border-color: var(--stage-paid);
+  color: var(--stage-paid);
+}
+.stage-badge.stage-invoiced {
+  border-color: var(--stage-invoiced);
+  color: var(--stage-invoiced);
+}
+.stage-badge.stage-closed {
+  border-color: var(--stage-closed);
+  color: var(--stage-closed);
+}
+
 /* Cards: stage color shown as an outline only; background stays neutral
    (or the manually-picked card_color, applied inline) so the card
    itself doesn't fight with a custom highlight color. */

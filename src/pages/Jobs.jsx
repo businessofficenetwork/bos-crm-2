@@ -5,12 +5,14 @@ import DetailView from '../components/DetailView'
 import JobComments from '../components/JobComments'
 import OpBadge from '../components/OpBadge'
 import SolBadge from '../components/SolBadge'
+import StageBadge from '../components/StageBadge'
+import ScopeAuditUpload from '../components/ScopeAuditUpload'
 import {
   listClaims,
-  createClaim,
   createClaimWithIntake,
   updateClaim,
   listContractors,
+  createContractor,
   listOpThresholdRules,
   listSolRules,
 } from '../lib/queries'
@@ -52,6 +54,7 @@ function claimFields(c, rules, solRules) {
     { label: 'Adjuster Contact', value: c.adjuster_contact },
     { label: 'Date of Loss', value: c.date_of_loss },
     { label: 'Statute of Limitations', value: <SolBadge claim={c} rules={solRules} /> },
+    { label: 'Pipeline Stage', value: <StageBadge claim={c} /> },
     { label: 'Trades Involved', value: (c.trades_involved || []).join(', ') },
     { label: 'O&P Status', value: <OpBadge claim={c} rules={rules} /> },
     { label: 'O&P Notes', value: c.op_notes },
@@ -105,6 +108,10 @@ function Jobs() {
   const [opSort, setOpSort] = useState('') // '', 'asc', 'desc'
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
+  // True right after Save turns a brand-new job into a saved one, so the
+  // screen can say so and prompt for the scope audit instead of silently
+  // relabeling itself "Edit Job".
+  const [justCreated, setJustCreated] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
@@ -112,6 +119,7 @@ function Jobs() {
     if (!openId || claims.length === 0) return
     const match = claims.find((c) => c.id === openId)
     if (match) {
+      setJustCreated(false)
       setEditing(match)
     }
     setSearchParams({}, { replace: true })
@@ -152,24 +160,43 @@ function Jobs() {
     refresh(value)
   }
 
+  // Matches an existing contractor by name (case-insensitive) so typing
+  // the same contractor on a later job reuses it instead of duplicating -
+  // only creates a new contractor row when nothing matches.
+  async function resolveContractorId(name) {
+    const trimmed = name.trim()
+    const existing = contractors.find((c) => c.name.trim().toLowerCase() === trimmed.toLowerCase())
+    if (existing) return existing.id
+    const created = await createContractor({ name: trimmed })
+    setContractors((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)))
+    return created.id
+  }
+
   async function handleSubmit(form) {
-    const rule = matchOpRule(rules, { carrierName: form.carrier, state: form.state })
-    const solRule = matchSolRule(solRules, { state: form.state })
-    const solDeadline = computeSolDeadline(form, solRule)
+    const { contractor_name, ...fields } = form
+    const contractor_id = await resolveContractorId(contractor_name)
+    const claimFields = { ...fields, contractor_id }
+    const rule = matchOpRule(rules, { carrierName: claimFields.carrier, state: claimFields.state })
+    const solRule = matchSolRule(solRules, { state: claimFields.state })
+    const solDeadline = computeSolDeadline(claimFields, solRule)
     const payload = {
-      ...form,
-      op_qualifies: computeOpQualifies(form.trades_involved, rule),
+      ...claimFields,
+      op_qualifies: computeOpQualifies(claimFields.trades_involved, rule),
       sol_deadline: solDeadline,
       sol_status: computeSolStatus(solDeadline),
     }
     if (editing.id) {
       await updateClaim(editing.id, payload)
-    } else if (editing.__intake) {
-      await createClaimWithIntake(payload)
+      setEditing(null)
     } else {
-      await createClaim(payload)
+      // Every new job starts in the Pipeline at Intake automatically - no
+      // separate "New Intake" step. Stays open (now in "edit" mode, with
+      // an id) instead of closing so the scope-audit upload section below
+      // can appear immediately - that's the whole point of the combined flow.
+      const newClaim = await createClaimWithIntake(payload)
+      setEditing(newClaim)
+      setJustCreated(true)
     }
-    setEditing(null)
     setViewing(null)
     await refresh()
   }
@@ -201,26 +228,15 @@ function Jobs() {
           </button>
           <button
             type="button"
-            onClick={() => setEditing({ __intake: true })}
-            disabled={contractors.length === 0}
-            title={contractors.length === 0 ? 'Add a contractor first' : undefined}
-          >
-            New Intake
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing({})}
-            disabled={contractors.length === 0}
-            title={contractors.length === 0 ? 'Add a contractor first' : undefined}
+            onClick={() => {
+              setJustCreated(false)
+              setEditing({})
+            }}
           >
             Add Job
           </button>
         </div>
       </div>
-
-      {contractors.length === 0 && !loading && (
-        <p>Add a contractor before creating a job.</p>
-      )}
 
       <div className="form-row wrap">
         <input
@@ -245,6 +261,7 @@ function Jobs() {
           fields={claimFields(viewing, rules, solRules)}
           headerColor={contractorColor(viewing.contractor?.id)}
           onEdit={() => {
+            setJustCreated(false)
             setEditing(viewing)
             setViewing(null)
           }}
@@ -254,9 +271,12 @@ function Jobs() {
 
       {editing && (
         <>
-          <h3>{editing.id ? 'Edit Job' : editing.__intake ? 'New Intake' : 'Add Job'}</h3>
-          {editing.__intake && (
+          <h3>{justCreated ? 'Job Saved' : editing.id ? 'Edit Job' : 'Add Job'}</h3>
+          {!editing.id && !justCreated && (
             <p>This creates the job and starts it in the Pipeline at the Intake stage.</p>
+          )}
+          {justCreated && (
+            <p>Upload the scope audit below to run it now, or close and come back to it later.</p>
           )}
           <ClaimForm
             contractors={contractors}
@@ -264,6 +284,7 @@ function Jobs() {
             onSubmit={handleSubmit}
             onCancel={() => setEditing(null)}
           />
+          {editing.id && <ScopeAuditUpload claimId={editing.id} />}
           {editing.id && <JobComments claimId={editing.id} />}
         </>
       )}
@@ -287,6 +308,7 @@ function Jobs() {
                 O&amp;P{opSort === 'asc' ? ' ▲' : opSort === 'desc' ? ' ▼' : ''}
               </th>
               <th>SOL Deadline</th>
+              <th>Pipeline Stage</th>
             </tr>
           </thead>
           <tbody>
@@ -310,11 +332,14 @@ function Jobs() {
                 <td>
                   <SolBadge claim={c} rules={solRules} />
                 </td>
+                <td>
+                  <StageBadge claim={c} />
+                </td>
               </tr>
             ))}
             {displayedClaims.length === 0 && (
               <tr>
-                <td colSpan={10}>No jobs found.</td>
+                <td colSpan={11}>No jobs found.</td>
               </tr>
             )}
           </tbody>

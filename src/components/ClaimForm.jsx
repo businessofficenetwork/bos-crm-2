@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TRADE_OPTIONS } from '../lib/opThreshold'
 
 const emptyForm = {
-  contractor_id: '',
+  contractor_name: '',
   property_address: '',
   homeowner_name: '',
   carrier: '',
@@ -23,6 +23,9 @@ function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
     ...Object.fromEntries(
       Object.keys(emptyForm).map((key) => [key, initialValues?.[key] ?? emptyForm[key]])
     ),
+    // The row from listClaims() has contractor_id but not a plain name field -
+    // the joined contractor's name is what this text input actually shows.
+    contractor_name: initialValues?.contractor?.name ?? initialValues?.contractor_name ?? '',
     op_override:
       initialValues?.op_override === true ? 'true' : initialValues?.op_override === false ? 'false' : '',
   })
@@ -50,6 +53,7 @@ function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
     try {
       await onSubmit({
         ...form,
+        contractor_name: form.contractor_name.trim(),
         date_of_loss: form.date_of_loss || null,
         state: form.state ? form.state.trim().toUpperCase().slice(0, 2) : null,
         op_override: form.op_override === '' ? null : form.op_override === 'true',
@@ -66,16 +70,19 @@ function ClaimForm({ contractors, initialValues, onSubmit, onCancel }) {
       <div className="form-row">
         <label>
           Contractor
-          <select name="contractor_id" value={form.contractor_id} onChange={handleChange} required>
-            <option value="" disabled>
-              Select a contractor…
-            </option>
+          <input
+            name="contractor_name"
+            list="contractor-names"
+            value={form.contractor_name}
+            onChange={handleChange}
+            placeholder="Type a name — new contractors are added automatically"
+            required
+          />
+          <datalist id="contractor-names">
             {contractors.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.name} />
             ))}
-          </select>
+          </datalist>
         </label>
         <label>
           Date of loss
