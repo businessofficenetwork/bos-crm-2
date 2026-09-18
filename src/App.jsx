@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Nav from './components/Nav'
 import Topbar from './components/Topbar'
 import Dashboard from './pages/Dashboard'
@@ -8,7 +8,6 @@ import Jobs from './pages/Jobs'
 import Pipeline from './pages/Pipeline'
 import Leads from './pages/Leads'
 import Audits from './pages/Audits'
-import SupplementGuide from './pages/SupplementGuide'
 import KnowledgeBase from './pages/KnowledgeBase'
 import Settings from './pages/Settings'
 import { getSession } from './lib/auth'
@@ -37,7 +36,7 @@ function App() {
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/audits" element={<Audits />} />
-              <Route path="/supplement-guide" element={<SupplementGuide />} />
+              <Route path="/supplement-guide" element={<Navigate to="/knowledge-base" replace />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

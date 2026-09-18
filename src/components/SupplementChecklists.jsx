@@ -54,8 +54,9 @@ function SupplementChecklists({ supplementId, initialProgress }) {
         </span>
       </div>
       <p className="form-hint">
-        Pulled from the Supplement Guide - click a checklist to expand it. Progress saves to
-        this supplement automatically.
+        From BON's step-by-step supplement process (see the Knowledge Base for the full
+        writeup) - click a checklist to expand it. Progress saves to this supplement
+        automatically.
       </p>
       {error && <p className="form-error">{error}</p>}
 

@@ -40,7 +40,6 @@ function Nav({ isAdmin }) {
         <NavLink to="/pipeline">Pipeline</NavLink>
         <NavLink to="/leads">Leads</NavLink>
         <NavLink to="/audits">Scope Audit</NavLink>
-        <NavLink to="/supplement-guide">Supplement Guide</NavLink>
         <NavLink to="/knowledge-base">Knowledge Base</NavLink>
         {isAdmin && <NavLink to="/settings">Settings</NavLink>}
       </nav>
