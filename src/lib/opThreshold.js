@@ -5,6 +5,7 @@ export const TRADE_OPTIONS = [
   'roofing',
   'gutters',
   'siding',
+  'windows',
   'drywall',
   'paint',
   'decking',
