@@ -720,6 +720,7 @@ export async function listKbCategories() {
     .from('kb_categories')
     .select('*, entries:kb_entries(id, title, tags)')
     .order('sort_order', { ascending: true })
+    .order('title', { referencedTable: 'entries', ascending: true })
 
   if (error) throw error
   return data
