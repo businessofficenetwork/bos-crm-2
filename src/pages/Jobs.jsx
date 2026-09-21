@@ -114,6 +114,16 @@ function Jobs() {
   const [justCreated, setJustCreated] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  // Arrives from Leads "Convert & Add Job" - opens a blank Add Job form
+  // with that contractor already filled in.
+  useEffect(() => {
+    const contractorName = searchParams.get('new_for')
+    if (!contractorName) return
+    setJustCreated(false)
+    setEditing({ contractor_name: contractorName })
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
+
   useEffect(() => {
     const openId = searchParams.get('open')
     if (!openId || claims.length === 0) return

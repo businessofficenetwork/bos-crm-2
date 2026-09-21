@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import LeadForm from '../components/LeadForm'
 import ContractorForm from '../components/ContractorForm'
 import DetailView from '../components/DetailView'
@@ -35,6 +36,8 @@ function Leads() {
   const [editing, setEditing] = useState(null) // null = closed, {} = new, object = editing
   const [viewing, setViewing] = useState(null) // null = closed, object = viewing
   const [converting, setConverting] = useState(null) // null = closed, lead object = converting that lead
+  const [thenAddJob, setThenAddJob] = useState(false) // true = after converting, jump to Add Job
+  const navigate = useNavigate()
 
   async function refresh(term = search) {
     setLoading(true)
@@ -71,10 +74,14 @@ function Leads() {
   }
 
   async function handleConvert(form) {
-    await createContractor(form)
+    const contractor = await createContractor(form)
     await updateLead(converting.id, { status: 'converted' })
     setConverting(null)
     setViewing(null)
+    if (thenAddJob) {
+      navigate(`/jobs?new_for=${encodeURIComponent(contractor.name)}`)
+      return
+    }
     await refresh()
   }
 
@@ -110,8 +117,23 @@ function Leads() {
           />
           {!['converted', 'dead'].includes(viewing.status) && (
             <div className="header-actions">
-              <button type="button" onClick={() => setConverting(viewing)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setThenAddJob(false)
+                  setConverting(viewing)
+                }}
+              >
                 Convert to Contractor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setThenAddJob(true)
+                  setConverting(viewing)
+                }}
+              >
+                Convert &amp; Add Job
               </button>
             </div>
           )}
