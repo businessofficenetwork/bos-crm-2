@@ -28,3 +28,23 @@ export async function composeDigest(data) {
   const textBlock = message.content.find((block) => block.type === 'text')
   return textBlock ? textBlock.text : ''
 }
+
+// Plain-counts version, no AI call - used for the text message (has to
+// be short) and as the email's fallback when the AI call fails (e.g. the
+// Anthropic account is out of credit), so a billing problem on that
+// account doesn't silently cancel the whole digest.
+export function composeShortDigest(data) {
+  const parts = []
+  if (data.newLeadsCount) parts.push(`${data.newLeadsCount} new lead${data.newLeadsCount === 1 ? '' : 's'}`)
+  if (data.findingsAwaitingReview.length) {
+    parts.push(`${data.findingsAwaitingReview.length} finding${data.findingsAwaitingReview.length === 1 ? '' : 's'} to review`)
+  }
+  if (data.overdueActions.length) parts.push(`${data.overdueActions.length} overdue action${data.overdueActions.length === 1 ? '' : 's'}`)
+  if (data.dueReminders.length) parts.push(`${data.dueReminders.length} due today`)
+  if (data.submittedAging.length) parts.push(`${data.submittedAging.length} submitted 7+ days, no response`)
+  if (data.approvedNotInvoiced.length) parts.push(`${data.approvedNotInvoiced.length} approved, not invoiced`)
+
+  const headline = parts.length ? parts.join(', ') : 'Nothing urgent today'
+  const rolling = `30d: ${data.rolling30d.auditsRun} audits, $${Math.round(data.rolling30d.totalEstRecovery).toLocaleString()} recoverable`
+  return `BOS Digest: ${headline}. ${rolling}.`
+}

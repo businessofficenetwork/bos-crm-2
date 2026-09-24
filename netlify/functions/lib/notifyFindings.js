@@ -1,15 +1,19 @@
-// Emails Keri when an audit's findings are ready. Raw fetch against
-// Resend's REST API — one email per audit run doesn't need the SDK.
+// Emails (and texts) Keri when an audit's findings are ready. Raw fetch
+// against Resend's REST API — one email per audit run doesn't need the SDK.
+
+import { sendText } from './sendText.js'
 
 const CRM_ORIGIN = 'https://boscrm2.netlify.app'
 
 export async function notifyFindingsReady({ auditId, address, estTotalRecovery, findingsCount }) {
+  const amount = Math.round(estTotalRecovery || 0).toLocaleString()
+  const subject = `Audit ready — ${address || 'Untitled claim'} — est. $${amount} recoverable — ${findingsCount} finding${findingsCount === 1 ? '' : 's'}`
+
+  await sendText(`${subject} ${CRM_ORIGIN}/audits?open=${auditId}`)
+
   const apiKey = process.env.RESEND_API_KEY
   const to = process.env.NOTIFY_EMAIL
   if (!apiKey || !to) return // notification is best-effort, not a hard requirement
-
-  const amount = Math.round(estTotalRecovery || 0).toLocaleString()
-  const subject = `Audit ready — ${address || 'Untitled claim'} — est. $${amount} recoverable — ${findingsCount} finding${findingsCount === 1 ? '' : 's'}`
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
